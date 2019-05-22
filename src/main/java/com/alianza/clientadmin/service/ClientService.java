@@ -14,7 +14,7 @@ public interface ClientService {
 	 * @param client
 	 * @return
 	 */
-	public ClientEntity createClient(final ClientEntity client);
+	public ClientEntity addClient(final ClientEntity client);
 
 	/**
 	 * @param sharedKey
@@ -26,7 +26,7 @@ public interface ClientService {
 	/**
 	 * @return
 	 */
-	public List<ClientEntity> queryAllClients();
+	public List<ClientEntity> getAllClients();
 
 	/**
 	 * @param sharedKey

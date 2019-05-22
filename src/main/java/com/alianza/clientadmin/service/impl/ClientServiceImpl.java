@@ -7,6 +7,7 @@ import static com.alianza.clientadmin.constants.Constants.ERROR_CONEXION_DB;
 import static com.alianza.clientadmin.constants.Constants.ERROR_ESCRITURA_DB;
 import static com.alianza.clientadmin.constants.Constants.ERROR_GENERICO_DB;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,11 +60,11 @@ public class ClientServiceImpl implements ClientService {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.alianza.clientadmin.service.ClientService#createClient(com.alianza.
+	 * @see com.alianza.clientadmin.service.ClientService#addClient(com.alianza.
 	 * clientadmin.entity.ClientEntity)
 	 */
 	@Override
-	public ClientEntity createClient(final ClientEntity client) {
+	public ClientEntity addClient(final ClientEntity client) {
 		Optional<ClientEntity> oClientPersisted = null;
 		ClientEntity clientPersisted = null;
 		try {
@@ -73,6 +74,7 @@ public class ClientServiceImpl implements ClientService {
 				if (clientPersisted != null) {
 					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_EXISTE, client.getSharedKey()));
 				} else {
+					client.setAddedDate(new Date());
 					proxyCache.getLstClientEntity().add(client);
 					clientPersisted = client;
 				}
@@ -81,6 +83,7 @@ public class ClientServiceImpl implements ClientService {
 				if (oClientPersisted.isPresent()) {
 					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_EXISTE, client.getSharedKey()));
 				} else {
+					client.setAddedDate(new Date());
 					clientPersisted = clientRepository.save(client);
 				}
 			}
@@ -117,6 +120,7 @@ public class ClientServiceImpl implements ClientService {
 				clientPersisted = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
 				if (clientPersisted != null) {
+					client.setAddedDate(new Date());
 					BeanUtils.copyProperties(client, clientPersisted);
 				} else {
 					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_NO_EXISTE, sharedKey));
@@ -126,7 +130,8 @@ public class ClientServiceImpl implements ClientService {
 				if (oClientPersisted.isPresent()) {
 					clientPersisted = oClientPersisted.get();
 					client.setId(clientPersisted.getId());
-					client = clientRepository.save(client);
+					client.setAddedDate(new Date());
+					clientPersisted = clientRepository.save(client);
 				} else {
 					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_NO_EXISTE, sharedKey));
 				}
@@ -145,16 +150,16 @@ public class ClientServiceImpl implements ClientService {
 			LOGGER.error(String.format(ERROR_GENERICO_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
 			throw e;
 		}
-		return client;
+		return clientPersisted;
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.alianza.clientadmin.service.ClientService#queryAllClients()
+	 * @see com.alianza.clientadmin.service.ClientService#getAllClients()
 	 */
 	@Override
-	public List<ClientEntity> queryAllClients() {
+	public List<ClientEntity> getAllClients() {
 		List<ClientEntity> lstClientEntity = null;
 		try {
 			if (configProperties.isHabilitarGuardadoCache()) {

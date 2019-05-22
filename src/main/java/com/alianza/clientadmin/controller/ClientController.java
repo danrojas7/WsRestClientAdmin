@@ -10,6 +10,7 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,14 +40,15 @@ public class ClientController {
 	 * @param client
 	 * @return
 	 */
-	@PostMapping("/")
-	public ResponseEntity<RespuestaServicio> createClient(@Valid @RequestBody ClientEntity client) {
+	@CrossOrigin
+	@PostMapping
+	public ResponseEntity<RespuestaServicio> addClient(@Valid @RequestBody ClientEntity client) {
 		RespuestaServicio respuesta = null;
 		ClientEntity clientInserted = null;
 
 		respuesta = new RespuestaServicio();
 		try {
-			clientInserted = clientService.createClient(client);
+			clientInserted = clientService.addClient(client);
 
 			respuesta.setEstado(0);
 			respuesta.setDescripcion(RESPUESTA_EXITOSA_GENERICA);
@@ -64,6 +66,7 @@ public class ClientController {
 	 * @param client
 	 * @return
 	 */
+	@CrossOrigin
 	@PostMapping("/{sharedKey}")
 	public ResponseEntity<RespuestaServicio> modifyClient(@Valid @PathVariable("sharedKey") String sharedKey,
 			@Valid @RequestBody ClientEntity client) {
@@ -88,14 +91,15 @@ public class ClientController {
 	/**
 	 * @return
 	 */
-	@GetMapping("/")
-	public ResponseEntity<RespuestaServicio> queryAllClients() {
+	@CrossOrigin
+	@GetMapping
+	public ResponseEntity<RespuestaServicio> getAllClients() {
 		RespuestaServicio respuesta = null;
 		List<ClientEntity> lstClientsInserted = null;
 
 		respuesta = new RespuestaServicio();
 		try {
-			lstClientsInserted = clientService.queryAllClients();
+			lstClientsInserted = clientService.getAllClients();
 
 			respuesta.setEstado(0);
 			respuesta.setDescripcion(RESPUESTA_EXITOSA_GENERICA);
@@ -112,7 +116,8 @@ public class ClientController {
 	 * @param sharedKey
 	 * @return
 	 */
-	@GetMapping("/{sharedKey}")
+	@CrossOrigin
+	@GetMapping("getBySharedKey/{sharedKey}")
 	public ResponseEntity<RespuestaServicio> getClientBySharedKey(@Valid @PathVariable("sharedKey") String sharedKey) {
 		RespuestaServicio respuesta = null;
 		ClientEntity clientInserted = null;
