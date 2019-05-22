@@ -1,6 +1,7 @@
 package com.alianza.clientadmin.service.impl;
 
 import static com.alianza.clientadmin.constants.Constants.ERROR_ACCESO_DB;
+import static com.alianza.clientadmin.constants.Constants.ERROR_CLIENTE_EXISTE;
 import static com.alianza.clientadmin.constants.Constants.ERROR_CLIENTE_NO_EXISTE;
 import static com.alianza.clientadmin.constants.Constants.ERROR_CONEXION_DB;
 import static com.alianza.clientadmin.constants.Constants.ERROR_ESCRITURA_DB;
@@ -62,12 +63,26 @@ public class ClientServiceImpl implements ClientService {
 	 * clientadmin.entity.ClientEntity)
 	 */
 	@Override
-	public ClientEntity createClient(ClientEntity client) {
+	public ClientEntity createClient(final ClientEntity client) {
+		Optional<ClientEntity> oClientPersisted = null;
+		ClientEntity clientPersisted = null;
 		try {
 			if (configProperties.isHabilitarGuardadoCache()) {
-				proxyCache.getLstClientEntity().add(client);
+				clientPersisted = proxyCache.getLstClientEntity().stream()
+						.filter(p -> p.getSharedKey().equalsIgnoreCase(client.getSharedKey())).findAny().orElse(null);
+				if (clientPersisted != null) {
+					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_EXISTE, client.getSharedKey()));
+				} else {
+					proxyCache.getLstClientEntity().add(client);
+					clientPersisted = client;
+				}
 			} else {
-				client = clientRepository.save(client);
+				oClientPersisted = clientRepository.findBySharedKey(client.getSharedKey());
+				if (oClientPersisted.isPresent()) {
+					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_EXISTE, client.getSharedKey()));
+				} else {
+					clientPersisted = clientRepository.save(client);
+				}
 			}
 		} catch (DataAccessResourceFailureException e) {
 			LOGGER.error(
@@ -83,7 +98,7 @@ public class ClientServiceImpl implements ClientService {
 			LOGGER.error(String.format(ERROR_GENERICO_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
 			throw e;
 		}
-		return client;
+		return clientPersisted;
 	}
 
 	/*

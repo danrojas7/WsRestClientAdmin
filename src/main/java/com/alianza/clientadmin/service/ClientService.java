@@ -14,7 +14,7 @@ public interface ClientService {
 	 * @param client
 	 * @return
 	 */
-	public ClientEntity createClient(ClientEntity client);
+	public ClientEntity createClient(final ClientEntity client);
 
 	/**
 	 * @param sharedKey

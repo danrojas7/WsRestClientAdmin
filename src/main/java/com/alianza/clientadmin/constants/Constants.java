@@ -17,6 +17,7 @@ public class Constants {
 	public static final String ERROR_EXCEPCION_GENERAL = "Error general: %s";
 
 	public static final String ERROR_CLIENTE_NO_EXISTE = "El cliente con sharedKey \"%s\" no existe";
+	public static final String ERROR_CLIENTE_EXISTE = "El cliente con sharedKey \"%s\" ya existe";
 
 	public Constants() {
 		super();

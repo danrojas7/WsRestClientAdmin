@@ -10,6 +10,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
 
 import com.alianza.clientadmin.entity.ClientEntity;
 
@@ -17,6 +18,7 @@ import com.alianza.clientadmin.entity.ClientEntity;
  * @author Daniel Alejandro
  *
  */
+@Component
 public class CacheManagement {
 
 	/**

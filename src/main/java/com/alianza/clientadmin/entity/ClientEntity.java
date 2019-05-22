@@ -7,6 +7,7 @@ import javax.validation.constraints.NotBlank;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "sharedKey", "businessId", "email", "phone", "addedDate", "lastModifiedDate" })
+@Document(collection = "alianza_cp_clientes")
 public class ClientEntity {
 
 	@Id
