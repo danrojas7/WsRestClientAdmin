@@ -6,36 +6,36 @@ package com.alianza.clientadmin.model;
  */
 public class RespuestaServicio {
 
-	private int estado;
-	private String descripcion;
-	private Object informacion;
+	private int status;
+	private String description;
+	private Object information;
 
 	public RespuestaServicio() {
 		super();
 	}
 
-	public final int getEstado() {
-		return estado;
+	public int getStatus() {
+		return status;
 	}
 
-	public final void setEstado(int estado) {
-		this.estado = estado;
+	public void setStatus(int status) {
+		this.status = status;
 	}
 
-	public final String getDescripcion() {
-		return descripcion;
+	public String getDescription() {
+		return description;
 	}
 
-	public final void setDescripcion(String descripcion) {
-		this.descripcion = descripcion;
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
-	public final Object getInformacion() {
-		return informacion;
+	public Object getInformation() {
+		return information;
 	}
 
-	public final void setInformacion(Object informacion) {
-		this.informacion = informacion;
+	public void setInformation(Object information) {
+		this.information = information;
 	}
 
 }

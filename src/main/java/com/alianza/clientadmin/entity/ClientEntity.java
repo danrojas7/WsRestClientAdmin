@@ -25,19 +25,19 @@ public class ClientEntity {
 	@Id
 	private ObjectId id;
 
-	@NotBlank(message = "El atributo del cliente sharedKey no debe estar vacío")
+	@NotBlank(message = "Shared Key is required")
 	@JsonProperty("sharedKey")
 	private String sharedKey;
 
-	@NotBlank(message = "El atributo del cliente businessId no debe estar vacío")
+	@NotBlank(message = "Business Id is required")
 	@JsonProperty("businessId")
 	private String businessId;
 
-	@NotBlank(message = "El atributo del cliente email no debe estar vacío")
+	@NotBlank(message = "E-Mail is required")
 	@JsonProperty("email")
 	private String email;
 
-	@NotBlank(message = "El atributo del cliente phone no debe estar vacío")
+	@NotBlank(message = "Phone Number is required")
 	@JsonProperty("phone")
 	private String phone;
 

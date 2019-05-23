@@ -50,13 +50,13 @@ public class ClientController {
 		try {
 			clientInserted = clientService.addClient(client);
 
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(RESPUESTA_EXITOSA_GENERICA);
-			respuesta.setInformacion(clientInserted);
+			respuesta.setStatus(0);
+			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setInformation(clientInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setStatus(1);
+			respuesta.setDescription(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -77,13 +77,13 @@ public class ClientController {
 		try {
 			clientInserted = clientService.modifyClient(sharedKey, client);
 
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(RESPUESTA_EXITOSA_GENERICA);
-			respuesta.setInformacion(clientInserted);
+			respuesta.setStatus(0);
+			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setInformation(clientInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setStatus(1);
+			respuesta.setInformation(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -101,13 +101,13 @@ public class ClientController {
 		try {
 			lstClientsInserted = clientService.getAllClients();
 
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(RESPUESTA_EXITOSA_GENERICA);
-			respuesta.setInformacion(lstClientsInserted);
+			respuesta.setStatus(0);
+			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setInformation(lstClientsInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setStatus(1);
+			respuesta.setDescription(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -126,13 +126,13 @@ public class ClientController {
 		try {
 			clientInserted = clientService.getClientBySharedKey(sharedKey);
 
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(RESPUESTA_EXITOSA_GENERICA);
-			respuesta.setInformacion(clientInserted);
+			respuesta.setStatus(0);
+			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setInformation(clientInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
-			respuesta.setEstado(0);
-			respuesta.setDescripcion(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setStatus(1);
+			respuesta.setDescription(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

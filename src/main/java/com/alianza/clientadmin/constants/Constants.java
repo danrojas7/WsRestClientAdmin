@@ -6,18 +6,18 @@ package com.alianza.clientadmin.constants;
  */
 public class Constants {
 
-	public static final String RESPUESTA_EXITOSA_GENERICA = "Transacción exitosa";
-	public static final String RESPUESTA_NO_EXITOSA_GENERICA = "Transacción NO exitosa, causado por: %s";
+	public static final String RESPUESTA_EXITOSA_GENERICA = "Success Transaction";
+	public static final String RESPUESTA_NO_EXITOSA_GENERICA = "Transaction Unsuccess, caused by: %s";
 
-	public static final String ERROR_GENERICO = "Error en API de administración de cliente";
-	public static final String ERROR_ACCESO_DB = "Error de acceso a la base de datos: %s";
-	public static final String ERROR_CONEXION_DB = "Error de conexión a la base de datos: %s";
-	public static final String ERROR_ESCRITURA_DB = "Error en la escritura de la base de datos: %s";
-	public static final String ERROR_GENERICO_DB = "Error con la base de datos: %s";
-	public static final String ERROR_EXCEPCION_GENERAL = "Error general: %s";
+	public static final String ERROR_GENERICO = "Error in API of Client Management";
+	public static final String ERROR_ACCESO_DB = "Database access error: %s";
+	public static final String ERROR_CONEXION_DB = "Database conection error: %s";
+	public static final String ERROR_ESCRITURA_DB = "Database write error: %s";
+	public static final String ERROR_GENERICO_DB = "Database error: %s";
+	public static final String ERROR_EXCEPCION_GENERAL = "General Error : %s";
 
-	public static final String ERROR_CLIENTE_NO_EXISTE = "El cliente con sharedKey \"%s\" no existe";
-	public static final String ERROR_CLIENTE_EXISTE = "El cliente con sharedKey \"%s\" ya existe";
+	public static final String ERROR_CLIENTE_NO_EXISTE = "Client by sharedKey \"%s\" doesn't exists";
+	public static final String ERROR_CLIENTE_EXISTE = "Client by sharedKey \"%s\" exists";
 
 	public Constants() {
 		super();
