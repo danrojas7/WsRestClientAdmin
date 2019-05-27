@@ -42,9 +42,10 @@ public class GenCsvComponent {
 		osWriter = new OutputStreamWriter(bos);
 		csvWriter = new CSVWriter(osWriter, separator, quotechar, escapechar, lineEnd);
 
-		lstRow = new ArrayList<Object>();
+		
 		for (Map<String, Object> registro : lstFileContents) {
 			if (header && writeHeaders) {
+				lstRow = new ArrayList<Object>();
 				for (Entry<String, Object> entry : registro.entrySet()) {
 					lstRow.add(entry.getKey());
 				}
