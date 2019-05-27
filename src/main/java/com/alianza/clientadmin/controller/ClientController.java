@@ -1,14 +1,18 @@
 package com.alianza.clientadmin.controller;
 
-import static com.alianza.clientadmin.constants.Constants.RESPUESTA_EXITOSA_GENERICA;
-import static com.alianza.clientadmin.constants.Constants.RESPUESTA_NO_EXITOSA_GENERICA;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_SUCCESS_RESPONSE;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_UNSUCCESS_REPONSE;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,12 +55,12 @@ public class ClientController {
 			clientInserted = clientService.addClient(client);
 
 			respuesta.setStatus(0);
-			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
 			respuesta.setInformation(clientInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
 			respuesta.setStatus(1);
-			respuesta.setDescription(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setDescription(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -78,12 +82,12 @@ public class ClientController {
 			clientInserted = clientService.modifyClient(sharedKey, client);
 
 			respuesta.setStatus(0);
-			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
 			respuesta.setInformation(clientInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
 			respuesta.setStatus(1);
-			respuesta.setInformation(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setInformation(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -102,12 +106,12 @@ public class ClientController {
 			lstClientsInserted = clientService.getAllClients();
 
 			respuesta.setStatus(0);
-			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
 			respuesta.setInformation(lstClientsInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
 			respuesta.setStatus(1);
-			respuesta.setDescription(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setDescription(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -127,13 +131,39 @@ public class ClientController {
 			clientInserted = clientService.getClientBySharedKey(sharedKey);
 
 			respuesta.setStatus(0);
-			respuesta.setDescription(RESPUESTA_EXITOSA_GENERICA);
+			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
 			respuesta.setInformation(clientInserted);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
 			respuesta.setStatus(1);
-			respuesta.setDescription(String.format(RESPUESTA_NO_EXITOSA_GENERICA, e.getMessage()));
+			respuesta.setDescription(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@CrossOrigin
+	@GetMapping("getFile/{fileFormat}")
+	public ResponseEntity<InputStreamResource> getFile(@Valid @PathVariable("fileFormat") String fileFormat) {
+		byte[] baFile = null;
+		long contentLength = 0;
+		String mediaType = null;
+		try {
+			if (fileFormat.equalsIgnoreCase("xls")) {
+				mediaType = "application/vnd.ms-excel";
+			} else if (fileFormat.equalsIgnoreCase("xlsx")) {
+				mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+			} else if (fileFormat.equalsIgnoreCase("csv")) {
+				mediaType = "text/csv";
+			} else {
+				throw new Exception("Unsupported format file");
+			}
+			baFile = clientService.getExportFileClientList(fileFormat);
+			contentLength = baFile.length;
+			return ResponseEntity.ok().contentLength(contentLength).contentType(MediaType.parseMediaType(mediaType))
+					.header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment;filename=export.%s", fileFormat))
+					.body(new InputStreamResource(new ByteArrayInputStream(baFile)));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
 		}
 	}
 

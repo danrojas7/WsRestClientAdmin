@@ -1,5 +1,6 @@
 package com.alianza.clientadmin.service;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.alianza.clientadmin.entity.ClientEntity;
@@ -35,8 +36,10 @@ public interface ClientService {
 	public ClientEntity getClientBySharedKey(String sharedKey);
 
 	/**
+	 * @param fileFormat
 	 * @return
+	 * @throws IOException
 	 */
-	public byte[] getExcelExportClientList();
+	public byte[] getExportFileClientList(String fileFormat) throws IOException;
 
 }

@@ -1,16 +1,21 @@
 package com.alianza.clientadmin.service.impl;
 
-import static com.alianza.clientadmin.constants.Constants.ERROR_ACCESO_DB;
-import static com.alianza.clientadmin.constants.Constants.ERROR_CLIENTE_EXISTE;
-import static com.alianza.clientadmin.constants.Constants.ERROR_CLIENTE_NO_EXISTE;
-import static com.alianza.clientadmin.constants.Constants.ERROR_CONEXION_DB;
-import static com.alianza.clientadmin.constants.Constants.ERROR_ESCRITURA_DB;
-import static com.alianza.clientadmin.constants.Constants.ERROR_GENERICO_DB;
+import static com.alianza.clientadmin.constants.Constants.CLIENT_DOES_NOT_EXIST_ERROR;
+import static com.alianza.clientadmin.constants.Constants.CLIENT_EXIST_ERROR;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_ERROR_ACCESS_DB;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_ERROR_CONNECTION_DB;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_ERROR_DB;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_ERROR_GENERATING_FILE;
+import static com.alianza.clientadmin.constants.Constants.GENERIC_ERROR_WRITING_DB;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.springframework.beans.BeanUtils;
@@ -20,10 +25,17 @@ import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.stereotype.Service;
 
 import com.alianza.clientadmin.cache.ProxyCache;
+import com.alianza.clientadmin.component.GenCsvComponent;
+import com.alianza.clientadmin.component.GenExcelComponent;
 import com.alianza.clientadmin.configuration.ConfigProperties;
 import com.alianza.clientadmin.entity.ClientEntity;
 import com.alianza.clientadmin.repository.ClientRepository;
 import com.alianza.clientadmin.service.ClientService;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.MongoSocketOpenException;
 import com.mongodb.MongoSocketWriteException;
 
@@ -55,7 +67,19 @@ public class ClientServiceImpl implements ClientService {
 	 * 
 	 */
 	@Autowired
-	public ClientRepository clientRepository;
+	private ClientRepository clientRepository;
+
+	/**
+	 * 
+	 */
+	@Autowired
+	private GenExcelComponent genExcelComponent;
+
+	/**
+	 * 
+	 */
+	@Autowired
+	private GenCsvComponent genCsvComponent;
 
 	/*
 	 * (non-Javadoc)
@@ -67,38 +91,42 @@ public class ClientServiceImpl implements ClientService {
 	public ClientEntity addClient(final ClientEntity client) {
 		Optional<ClientEntity> oClientPersisted = null;
 		ClientEntity clientPersisted = null;
+		SimpleDateFormat sdf = null;
 		try {
-			if (configProperties.isHabilitarGuardadoCache()) {
+			sdf = new SimpleDateFormat(configProperties.getDefaultDateFormat());
+			if (configProperties.isEnableCachingSave()) {
 				clientPersisted = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(client.getSharedKey())).findAny().orElse(null);
 				if (clientPersisted != null) {
-					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_EXISTE, client.getSharedKey()));
+					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, client.getSharedKey()));
 				} else {
-					client.setAddedDate(new Date());
+					client.setAddedDate(sdf.format(new Date()));
+					client.setLastModifiedDate(StringUtils.EMPTY);
 					proxyCache.getLstClientEntity().add(client);
 					clientPersisted = client;
 				}
 			} else {
 				oClientPersisted = clientRepository.findBySharedKey(client.getSharedKey());
 				if (oClientPersisted.isPresent()) {
-					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_EXISTE, client.getSharedKey()));
+					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, client.getSharedKey()));
 				} else {
-					client.setAddedDate(new Date());
+					client.setAddedDate(sdf.format(new Date()));
+					client.setLastModifiedDate(StringUtils.EMPTY);
 					clientPersisted = clientRepository.save(client);
 				}
 			}
 		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(
-					String.format(ERROR_ACCESO_DB, ((DataAccessResourceFailureException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
+					((DataAccessResourceFailureException) e).getMostSpecificCause()));
 			throw e;
 		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(ERROR_CONEXION_DB, ((MongoSocketOpenException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
 			throw e;
 		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(ERROR_ESCRITURA_DB, ((MongoSocketWriteException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
 			throw e;
 		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(ERROR_GENERICO_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
 			throw e;
 		}
 		return clientPersisted;
@@ -115,39 +143,41 @@ public class ClientServiceImpl implements ClientService {
 	public ClientEntity modifyClient(String sharedKey, ClientEntity client) {
 		Optional<ClientEntity> oClientPersisted = null;
 		ClientEntity clientPersisted = null;
+		SimpleDateFormat sdf = null;
 		try {
-			if (configProperties.isHabilitarGuardadoCache()) {
+			sdf = new SimpleDateFormat(configProperties.getDefaultDateFormat());
+			if (configProperties.isEnableCachingSave()) {
 				clientPersisted = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
 				if (clientPersisted != null) {
-					client.setAddedDate(new Date());
+					client.setLastModifiedDate(sdf.format(new Date()));
 					BeanUtils.copyProperties(client, clientPersisted);
 				} else {
-					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_NO_EXISTE, sharedKey));
+					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
 			} else {
 				oClientPersisted = clientRepository.findBySharedKey(sharedKey);
 				if (oClientPersisted.isPresent()) {
 					clientPersisted = oClientPersisted.get();
 					client.setId(clientPersisted.getId());
-					client.setAddedDate(new Date());
+					client.setLastModifiedDate(sdf.format(new Date()));
 					clientPersisted = clientRepository.save(client);
 				} else {
-					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_NO_EXISTE, sharedKey));
+					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
 			}
 		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(
-					String.format(ERROR_ACCESO_DB, ((DataAccessResourceFailureException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
+					((DataAccessResourceFailureException) e).getMostSpecificCause()));
 			throw e;
 		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(ERROR_CONEXION_DB, ((MongoSocketOpenException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
 			throw e;
 		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(ERROR_ESCRITURA_DB, ((MongoSocketWriteException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
 			throw e;
 		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(ERROR_GENERICO_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
 			throw e;
 		}
 		return clientPersisted;
@@ -162,23 +192,23 @@ public class ClientServiceImpl implements ClientService {
 	public List<ClientEntity> getAllClients() {
 		List<ClientEntity> lstClientEntity = null;
 		try {
-			if (configProperties.isHabilitarGuardadoCache()) {
+			if (configProperties.isEnableCachingSave()) {
 				lstClientEntity = proxyCache.getLstClientEntity();
 			} else {
 				lstClientEntity = clientRepository.findAll();
 			}
 		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(
-					String.format(ERROR_ACCESO_DB, ((DataAccessResourceFailureException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
+					((DataAccessResourceFailureException) e).getMostSpecificCause()));
 			throw e;
 		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(ERROR_CONEXION_DB, ((MongoSocketOpenException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
 			throw e;
 		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(ERROR_ESCRITURA_DB, ((MongoSocketWriteException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
 			throw e;
 		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(ERROR_GENERICO_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
 			throw e;
 		}
 		return lstClientEntity;
@@ -196,32 +226,32 @@ public class ClientServiceImpl implements ClientService {
 		Optional<ClientEntity> oClient = null;
 		ClientEntity client = null;
 		try {
-			if (configProperties.isHabilitarGuardadoCache()) {
+			if (configProperties.isEnableCachingSave()) {
 				client = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
 				if (client == null) {
-					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_NO_EXISTE, sharedKey));
+					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
 			} else {
 				oClient = clientRepository.findBySharedKey(sharedKey);
 				if (oClient.isPresent()) {
 					client = oClient.get();
 				} else {
-					throw new IllegalArgumentException(String.format(ERROR_CLIENTE_NO_EXISTE, sharedKey));
+					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
 			}
 		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(
-					String.format(ERROR_ACCESO_DB, ((DataAccessResourceFailureException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
+					((DataAccessResourceFailureException) e).getMostSpecificCause()));
 			throw e;
 		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(ERROR_CONEXION_DB, ((MongoSocketOpenException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
 			throw e;
 		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(ERROR_ESCRITURA_DB, ((MongoSocketWriteException) e).getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
 			throw e;
 		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(ERROR_GENERICO_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
 			throw e;
 		}
 		return client;
@@ -230,12 +260,62 @@ public class ClientServiceImpl implements ClientService {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see com.alianza.clientadmin.service.ClientService#getExcelExportClientList()
+	 * @see
+	 * com.alianza.clientadmin.service.ClientService#getExcelExportClientList(java.
+	 * lang.String)
 	 */
 	@Override
-	public byte[] getExcelExportClientList() {
-		// TODO Auto-generated method stub
-		return null;
+	public byte[] getExportFileClientList(String fileFormat) throws IOException {
+		byte[] arrayFile = null;
+		List<ClientEntity> lstClientEntity = null;
+		List<LinkedHashMap<String, Object>> lstFileContents = null;
+		ObjectMapper mapper = null;
+		try {
+			if (configProperties.isEnableCachingSave()) {
+				lstClientEntity = proxyCache.getLstClientEntity();
+			} else {
+				lstClientEntity = clientRepository.findAll();
+			}
+			mapper = new ObjectMapper();
+			lstFileContents = mapper.readValue(mapper.writeValueAsString(lstClientEntity),
+					new TypeReference<List<LinkedHashMap<String, Object>>>() {
+					});
+			if (fileFormat.equalsIgnoreCase("xls") || fileFormat.equalsIgnoreCase("xlsx")) {
+				arrayFile = genExcelComponent.generarByteArrayArchivoExcel(null, new Integer(0), new Integer(0),
+						lstFileContents, null, true, String.format(".%s", fileFormat), "content", null, false, true);
+			} else {
+				arrayFile = genCsvComponent.generateCsvFile(lstFileContents, true,
+						configProperties.getDefaultCsvSeparator(), configProperties.getDefaultCsvQuoteChar(),
+						configProperties.getDefaultCsvEscapeChar(), configProperties.getDefaultCsvLineEnd());
+			}
+		} catch (DataAccessResourceFailureException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
+					((DataAccessResourceFailureException) e).getMostSpecificCause()));
+			throw e;
+		} catch (MongoSocketOpenException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
+			throw e;
+		} catch (MongoSocketWriteException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
+			throw e;
+		} catch (UncategorizedMongoDbException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			throw e;
+		} catch (JsonParseException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
+			throw e;
+		} catch (JsonMappingException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
+			throw e;
+		} catch (JsonProcessingException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
+			throw e;
+		} catch (IOException e) {
+			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
+			throw e;
+		}
+
+		return arrayFile;
 	}
 
 }

@@ -1,14 +1,13 @@
 
 package com.alianza.clientadmin.entity;
 
-import java.util.Date;
-
 import javax.validation.constraints.NotBlank;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -23,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class ClientEntity {
 
 	@Id
+	@JsonIgnore
 	private ObjectId id;
 
 	@NotBlank(message = "Shared Key is required")
@@ -42,10 +42,10 @@ public class ClientEntity {
 	private String phone;
 
 	@JsonProperty("addedDate")
-	private Date addedDate;
+	private String addedDate;
 
 	@JsonProperty("lastModifiedDate")
-	private Date lastModifiedDate;
+	private String lastModifiedDate;
 
 	/**
 	 * No args constructor for use in serialization
@@ -64,8 +64,8 @@ public class ClientEntity {
 	 * @param businessId
 	 * @param sharedKey
 	 */
-	public ClientEntity(String sharedKey, String businessId, String email, String phone, Date addedDate,
-			Date lastModifiedDate) {
+	public ClientEntity(String sharedKey, String businessId, String email, String phone, String addedDate,
+			String lastModifiedDate) {
 		super();
 		this.sharedKey = sharedKey;
 		this.businessId = businessId;
@@ -75,10 +75,12 @@ public class ClientEntity {
 		this.lastModifiedDate = lastModifiedDate;
 	}
 
+	@JsonIgnore
 	public ObjectId getId() {
 		return id;
 	}
 
+	@JsonIgnore
 	public void setId(ObjectId id) {
 		this.id = id;
 	}
@@ -124,22 +126,22 @@ public class ClientEntity {
 	}
 
 	@JsonProperty("addedDate")
-	public Date getAddedDate() {
+	public String getAddedDate() {
 		return addedDate;
 	}
 
 	@JsonProperty("addedDate")
-	public void setAddedDate(Date addedDate) {
+	public void setAddedDate(String addedDate) {
 		this.addedDate = addedDate;
 	}
 
 	@JsonProperty("lastModifiedDate")
-	public Date getLastModifiedDate() {
+	public String getLastModifiedDate() {
 		return lastModifiedDate;
 	}
 
 	@JsonProperty("lastModifiedDate")
-	public void setLastModifiedDate(Date lastModifiedDate) {
+	public void setLastModifiedDate(String lastModifiedDate) {
 		this.lastModifiedDate = lastModifiedDate;
 	}
 
