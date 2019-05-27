@@ -276,6 +276,10 @@ public class ClientServiceImpl implements ClientService {
 			} else {
 				lstClientEntity = clientRepository.findAll();
 			}
+			if (lstClientEntity.isEmpty()) {
+				lstClientEntity.add(new ClientEntity(StringUtils.EMPTY, StringUtils.EMPTY, StringUtils.EMPTY,
+						StringUtils.EMPTY, StringUtils.EMPTY, StringUtils.EMPTY));
+			}
 			mapper = new ObjectMapper();
 			lstFileContents = mapper.readValue(mapper.writeValueAsString(lstClientEntity),
 					new TypeReference<List<LinkedHashMap<String, Object>>>() {
