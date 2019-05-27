@@ -42,17 +42,18 @@ public class GenCsvComponent {
 		osWriter = new OutputStreamWriter(bos);
 		csvWriter = new CSVWriter(osWriter, separator, quotechar, escapechar, lineEnd);
 
+		lstRow = new ArrayList<Object>();
 		for (Map<String, Object> registro : lstFileContents) {
-			lstRow = new ArrayList<Object>();
 			if (header && writeHeaders) {
 				for (Entry<String, Object> entry : registro.entrySet()) {
 					lstRow.add(entry.getKey());
 				}
+				csvWriter.writeNext(lstRow.stream().toArray(String[]::new));
 				header = false;
-			} else {
-				for (Entry<String, Object> entry : registro.entrySet()) {
-					lstRow.add(entry.getValue());
-				}
+			}
+			lstRow = new ArrayList<Object>();
+			for (Entry<String, Object> entry : registro.entrySet()) {
+				lstRow.add(entry.getValue());
 			}
 			csvWriter.writeNext(lstRow.stream().toArray(String[]::new));
 		}
