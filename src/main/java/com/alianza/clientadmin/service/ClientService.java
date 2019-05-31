@@ -42,4 +42,10 @@ public interface ClientService {
 	 */
 	public byte[] getExportFileClientList(String fileFormat) throws IOException;
 
+	/**
+	 * @param qryClientEntity
+	 * @return
+	 */
+	public List<ClientEntity> searchClientsByCriteria(ClientEntity qryClientEntity);
+
 }

@@ -12,11 +12,12 @@ import org.springframework.context.annotation.Configuration;
 public class ConfigProperties {
 
 	private boolean enableCachingSave;
-	private String defaultDateFormat;
 	private char defaultCsvSeparator;
 	private char defaultCsvQuoteChar;
 	private char defaultCsvEscapeChar;
 	private String defaultCsvLineEnd;
+	private String defaultHeadersExportFile;
+	private String defaultDateFormat;
 
 	public ConfigProperties() {
 		super();
@@ -28,14 +29,6 @@ public class ConfigProperties {
 
 	public void setEnableCachingSave(boolean enableCachingSave) {
 		this.enableCachingSave = enableCachingSave;
-	}
-
-	public String getDefaultDateFormat() {
-		return defaultDateFormat;
-	}
-
-	public void setDefaultDateFormat(String defaultDateFormat) {
-		this.defaultDateFormat = defaultDateFormat;
 	}
 
 	public char getDefaultCsvSeparator() {
@@ -68,6 +61,22 @@ public class ConfigProperties {
 
 	public void setDefaultCsvLineEnd(String defaultCsvLineEnd) {
 		this.defaultCsvLineEnd = defaultCsvLineEnd;
+	}
+
+	public String getDefaultHeadersExportFile() {
+		return defaultHeadersExportFile;
+	}
+
+	public void setDefaultHeadersExportFile(String defaultHeadersExportFile) {
+		this.defaultHeadersExportFile = defaultHeadersExportFile;
+	}
+
+	public String getDefaultDateFormat() {
+		return defaultDateFormat;
+	}
+
+	public void setDefaultDateFormat(String defaultDateFormat) {
+		this.defaultDateFormat = defaultDateFormat;
 	}
 
 }

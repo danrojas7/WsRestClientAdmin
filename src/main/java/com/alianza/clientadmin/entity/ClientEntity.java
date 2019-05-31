@@ -1,6 +1,8 @@
 
 package com.alianza.clientadmin.entity;
 
+import java.util.Date;
+
 import javax.validation.constraints.NotBlank;
 
 import org.bson.types.ObjectId;
@@ -42,10 +44,10 @@ public class ClientEntity {
 	private String phone;
 
 	@JsonProperty("addedDate")
-	private String addedDate;
+	private Date addedDate;
 
 	@JsonProperty("lastModifiedDate")
-	private String lastModifiedDate;
+	private Date lastModifiedDate;
 
 	/**
 	 * No args constructor for use in serialization
@@ -64,8 +66,8 @@ public class ClientEntity {
 	 * @param businessId
 	 * @param sharedKey
 	 */
-	public ClientEntity(String sharedKey, String businessId, String email, String phone, String addedDate,
-			String lastModifiedDate) {
+	public ClientEntity(String sharedKey, String businessId, String email, String phone, Date addedDate,
+			Date lastModifiedDate) {
 		super();
 		this.sharedKey = sharedKey;
 		this.businessId = businessId;
@@ -126,22 +128,22 @@ public class ClientEntity {
 	}
 
 	@JsonProperty("addedDate")
-	public String getAddedDate() {
+	public Date getAddedDate() {
 		return addedDate;
 	}
 
 	@JsonProperty("addedDate")
-	public void setAddedDate(String addedDate) {
+	public void setAddedDate(Date addedDate) {
 		this.addedDate = addedDate;
 	}
 
 	@JsonProperty("lastModifiedDate")
-	public String getLastModifiedDate() {
+	public Date getLastModifiedDate() {
 		return lastModifiedDate;
 	}
 
 	@JsonProperty("lastModifiedDate")
-	public void setLastModifiedDate(String lastModifiedDate) {
+	public void setLastModifiedDate(Date lastModifiedDate) {
 		this.lastModifiedDate = lastModifiedDate;
 	}
 

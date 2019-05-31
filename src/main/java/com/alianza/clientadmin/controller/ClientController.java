@@ -121,7 +121,7 @@ public class ClientController {
 	 * @return
 	 */
 	@CrossOrigin
-	@GetMapping("getBySharedKey/{sharedKey}")
+	@GetMapping("/getBySharedKey/{sharedKey}")
 	public ResponseEntity<RespuestaServicio> getClientBySharedKey(@Valid @PathVariable("sharedKey") String sharedKey) {
 		RespuestaServicio respuesta = null;
 		ClientEntity clientInserted = null;
@@ -142,7 +142,7 @@ public class ClientController {
 	}
 
 	@CrossOrigin
-	@GetMapping("getFile/{fileFormat}")
+	@GetMapping("/getFile/{fileFormat}")
 	public ResponseEntity<InputStreamResource> getFile(@Valid @PathVariable("fileFormat") String fileFormat) {
 		byte[] baFile = null;
 		long contentLength = 0;
@@ -164,6 +164,27 @@ public class ClientController {
 					.body(new InputStreamResource(new ByteArrayInputStream(baFile)));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+		}
+	}
+
+	@CrossOrigin
+	@PostMapping("/searchClientsByCriteria")
+	public ResponseEntity<RespuestaServicio> searchClientsByCriteria(@RequestBody ClientEntity qryClientEntity) {
+		RespuestaServicio respuesta = null;
+		List<ClientEntity> lstClientEntity = null;
+
+		respuesta = new RespuestaServicio();
+		try {
+			lstClientEntity = clientService.searchClientsByCriteria(qryClientEntity);
+
+			respuesta.setStatus(0);
+			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
+			respuesta.setInformation(lstClientEntity);
+			return new ResponseEntity<>(respuesta, HttpStatus.OK);
+		} catch (Exception e) {
+			respuesta.setStatus(1);
+			respuesta.setDescription(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
+			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 

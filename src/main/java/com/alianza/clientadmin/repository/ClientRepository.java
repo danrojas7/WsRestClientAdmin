@@ -8,8 +8,17 @@ import org.springframework.stereotype.Repository;
 
 import com.alianza.clientadmin.entity.ClientEntity;
 
+/**
+ * @author drojas
+ *
+ */
 @Repository
 public interface ClientRepository extends MongoRepository<ClientEntity, ObjectId> {
 
+	/**
+	 * @param sharedKey
+	 * @return
+	 */
 	public Optional<ClientEntity> findBySharedKey(String sharedKey);
+
 }

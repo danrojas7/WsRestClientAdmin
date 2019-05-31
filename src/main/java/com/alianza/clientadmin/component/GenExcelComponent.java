@@ -86,7 +86,12 @@ public class GenExcelComponent {
 			}
 		}
 
-		headerSet = lstFileContents.get(0).keySet();
+		if (columnFileTitle != null) {
+			headerSet = columnFileTitle.keySet();
+		} else {
+			headerSet = lstFileContents.get(0).keySet();
+		}
+
 		countRow = initPostRow;
 		countColumn = initPosColumn;
 		for (Map<String, Object> row : lstFileContents) {
