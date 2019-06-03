@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.alianza.clientadmin.entity.ClientEntity;
-import com.alianza.clientadmin.cache.CacheManagement;
 
 /**
  * @author Daniel Alejandro

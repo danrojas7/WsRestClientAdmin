@@ -20,7 +20,7 @@ public class Constants {
 	public static final String CLIENT_DOES_NOT_EXIST_ERROR = "Client by sharedKey \"%s\" doesn't exists";
 	public static final String CLIENT_EXIST_ERROR = "Client by sharedKey \"%s\" exists";
 
-	public Constants() {
+	private Constants() {
 		super();
 	}
 }

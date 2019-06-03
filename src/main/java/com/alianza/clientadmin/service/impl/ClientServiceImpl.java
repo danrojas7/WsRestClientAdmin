@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.bson.types.ObjectId;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -35,13 +36,11 @@ import com.alianza.clientadmin.cache.ProxyCache;
 import com.alianza.clientadmin.component.GenCsvComponent;
 import com.alianza.clientadmin.component.GenExcelComponent;
 import com.alianza.clientadmin.configuration.ConfigProperties;
+import com.alianza.clientadmin.dto.ClientDTO;
 import com.alianza.clientadmin.entity.ClientEntity;
 import com.alianza.clientadmin.repository.ClientRepository;
 import com.alianza.clientadmin.service.ClientService;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.mongodb.MongoSocketOpenException;
@@ -114,49 +113,61 @@ public class ClientServiceImpl implements ClientService {
 	 * (non-Javadoc)
 	 * 
 	 * @see com.alianza.clientadmin.service.ClientService#addClient(com.alianza.
-	 * clientadmin.entity.ClientEntity)
+	 * clientadmin.dto.ClientDTO)
 	 */
 	@Override
-	public ClientEntity addClient(final ClientEntity client) {
+	public ClientDTO addClient(final ClientDTO clientDTO) {
 		Optional<ClientEntity> oClientPersisted = null;
-		ClientEntity clientPersisted = null;
+		ClientEntity clientEntity = null;
 		try {
 			if (configProperties.isEnableCachingSave()) {
-				clientPersisted = proxyCache.getLstClientEntity().stream()
-						.filter(p -> p.getSharedKey().equalsIgnoreCase(client.getSharedKey())).findAny().orElse(null);
-				if (clientPersisted != null) {
-					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, client.getSharedKey()));
+				clientEntity = proxyCache.getLstClientEntity().stream()
+						.filter(p -> p.getSharedKey().equalsIgnoreCase(clientDTO.getSharedKey())).findAny()
+						.orElse(null);
+				if (clientEntity != null) {
+					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
 				} else {
-					client.setAddedDate(new Date());
-					client.setLastModifiedDate(null);
-					proxyCache.getLstClientEntity().add(client);
-					clientPersisted = client;
+					clientDTO.setAddedDate(new Date());
+					clientDTO.setLastModifiedDate(null);
+					clientEntity = new ClientEntity();
+					BeanUtils.copyProperties(clientDTO, clientEntity);
+					proxyCache.getLstClientEntity().add(clientEntity);
 				}
 			} else {
-				oClientPersisted = clientRepository.findBySharedKey(client.getSharedKey());
+				oClientPersisted = clientRepository.findBySharedKey(clientDTO.getSharedKey());
 				if (oClientPersisted.isPresent()) {
-					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, client.getSharedKey()));
+					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
 				} else {
-					client.setAddedDate(new Date());
-					client.setLastModifiedDate(null);
-					clientPersisted = clientRepository.save(client);
+					clientDTO.setAddedDate(new Date());
+					clientDTO.setLastModifiedDate(null);
+					clientEntity = new ClientEntity();
+					BeanUtils.copyProperties(clientDTO, clientEntity);
+					clientEntity = clientRepository.save(clientEntity);
+					BeanUtils.copyProperties(clientEntity, clientDTO);
 				}
 			}
-		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
-			throw e;
-		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
-			throw e;
-		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
-			throw e;
-		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
+				| UncategorizedMongoDbException e) {
+			logsMongoDBExceptions(e);
 			throw e;
 		}
-		return clientPersisted;
+		return clientDTO;
+	}
+
+	/**
+	 * @param e
+	 */
+	private void logsMongoDBExceptions(Exception e) {
+		if (e instanceof DataAccessResourceFailureException) {
+			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
+					((DataAccessResourceFailureException) e).getMostSpecificCause()));
+		} else if (e instanceof MongoSocketOpenException) {
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, e.getCause()));
+		} else if (e instanceof MongoSocketWriteException) {
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, e.getCause()));
+		} else if (e instanceof UncategorizedMongoDbException) {
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+		}
 	}
 
 	/*
@@ -164,19 +175,20 @@ public class ClientServiceImpl implements ClientService {
 	 * 
 	 * @see
 	 * com.alianza.clientadmin.service.ClientService#modifyClient(java.lang.String,
-	 * com.alianza.clientadmin.entity.ClientEntity)
+	 * com.alianza.clientadmin.dto.ClientDTO)
 	 */
 	@Override
-	public ClientEntity modifyClient(String sharedKey, ClientEntity client) {
+	public ClientDTO modifyClient(String sharedKey, ClientDTO clientDTO) {
 		Optional<ClientEntity> oClientPersisted = null;
 		ClientEntity clientPersisted = null;
+		ObjectId oId = null;
 		try {
 			if (configProperties.isEnableCachingSave()) {
 				clientPersisted = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
 				if (clientPersisted != null) {
-					client.setLastModifiedDate(new Date());
-					BeanUtils.copyProperties(client, clientPersisted);
+					clientDTO.setLastModifiedDate(new Date());
+					BeanUtils.copyProperties(clientDTO, clientPersisted);
 				} else {
 					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
@@ -184,28 +196,21 @@ public class ClientServiceImpl implements ClientService {
 				oClientPersisted = clientRepository.findBySharedKey(sharedKey);
 				if (oClientPersisted.isPresent()) {
 					clientPersisted = oClientPersisted.get();
-					client.setId(clientPersisted.getId());
-					client.setLastModifiedDate(new Date());
-					clientPersisted = clientRepository.save(client);
+					oId = clientPersisted.getId();
+					clientDTO.setLastModifiedDate(new Date());
+					BeanUtils.copyProperties(clientDTO, clientPersisted);
+					clientPersisted.setId(oId);
+					clientRepository.save(clientPersisted);
 				} else {
 					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
 			}
-		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
-			throw e;
-		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
-			throw e;
-		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
-			throw e;
-		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
+				| UncategorizedMongoDbException e) {
+			logsMongoDBExceptions(e);
 			throw e;
 		}
-		return clientPersisted;
+		return clientDTO;
 	}
 
 	/*
@@ -214,72 +219,67 @@ public class ClientServiceImpl implements ClientService {
 	 * @see com.alianza.clientadmin.service.ClientService#getAllClients()
 	 */
 	@Override
-	public List<ClientEntity> getAllClients() {
+	public List<ClientDTO> getAllClients() {
 		List<ClientEntity> lstClientEntity = null;
+		List<ClientDTO> lstClientDTO = null;
+		ClientDTO auxClientDTO = null;
 		try {
 			if (configProperties.isEnableCachingSave()) {
 				lstClientEntity = proxyCache.getLstClientEntity();
 			} else {
 				lstClientEntity = clientRepository.findAll();
 			}
-		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
-			throw e;
-		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
-			throw e;
-		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
-			throw e;
-		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			lstClientDTO = new ArrayList<>(lstClientEntity.size());
+			for (ClientEntity clientEntity : lstClientEntity) {
+				auxClientDTO = new ClientDTO();
+				BeanUtils.copyProperties(clientEntity, auxClientDTO);
+				lstClientDTO.add(auxClientDTO);
+			}
+		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
+				| UncategorizedMongoDbException e) {
+			logsMongoDBExceptions(e);
 			throw e;
 		}
-		return lstClientEntity;
+		return lstClientDTO;
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.alianza.clientadmin.service.ClientService#queryClientBySharedKey(java.
-	 * lang.String)
+	 * com.alianza.clientadmin.service.ClientService#getClientBySharedKey(java.lang.
+	 * String)
 	 */
 	@Override
-	public ClientEntity getClientBySharedKey(String sharedKey) {
+	public ClientDTO getClientBySharedKey(String sharedKey) {
 		Optional<ClientEntity> oClient = null;
-		ClientEntity client = null;
+		ClientEntity clientEntity = null;
+		ClientDTO clientDTO = null;
 		try {
 			if (configProperties.isEnableCachingSave()) {
-				client = proxyCache.getLstClientEntity().stream()
+				clientEntity = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
-				if (client == null) {
+				if (clientEntity == null) {
 					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
+				clientDTO = new ClientDTO();
+				BeanUtils.copyProperties(clientEntity, clientDTO);
 			} else {
 				oClient = clientRepository.findBySharedKey(sharedKey);
 				if (oClient.isPresent()) {
-					client = oClient.get();
+					clientEntity = oClient.get();
+					clientDTO = new ClientDTO();
+					BeanUtils.copyProperties(clientEntity, clientDTO);
 				} else {
 					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
 				}
 			}
-		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
-			throw e;
-		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
-			throw e;
-		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
-			throw e;
-		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
+				| UncategorizedMongoDbException e) {
+			logsMongoDBExceptions(e);
 			throw e;
 		}
-		return client;
+		return clientDTO;
 	}
 
 	/*
@@ -318,41 +318,21 @@ public class ClientServiceImpl implements ClientService {
 					});
 
 			if (fileFormat.equalsIgnoreCase("xls") || fileFormat.equalsIgnoreCase("xlsx")) {
-				arrayFile = genExcelComponent.generarByteArrayArchivoExcel(null, new Integer(0), new Integer(0),
-						lstFileContents, columnFileTitle, true, String.format(".%s", fileFormat), "content", null,
-						false, true);
+				arrayFile = genExcelComponent.generarByteArrayArchivoExcel(null, 0, 0, lstFileContents, columnFileTitle,
+						true, String.format(".%s", fileFormat), "content", null, false, true);
 			} else {
 				arrayFile = genCsvComponent.generateCsvFile(lstFileContents, columnFileTitle, true,
 						configProperties.getDefaultCsvSeparator(), configProperties.getDefaultCsvQuoteChar(),
 						configProperties.getDefaultCsvEscapeChar(), configProperties.getDefaultCsvLineEnd());
 			}
-		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
-			throw e;
-		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
-			throw e;
-		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
-			throw e;
-		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
-			throw e;
-		} catch (JsonParseException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
-			throw e;
-		} catch (JsonMappingException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
-			throw e;
-		} catch (JsonProcessingException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
+		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
+				| UncategorizedMongoDbException e) {
+			logsMongoDBExceptions(e);
 			throw e;
 		} catch (IOException e) {
 			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
 			throw e;
 		}
-
 		return arrayFile;
 	}
 
@@ -361,89 +341,101 @@ public class ClientServiceImpl implements ClientService {
 	 * 
 	 * @see
 	 * com.alianza.clientadmin.service.ClientService#searchClientsByCriteria(com.
-	 * alianza.clientadmin.entity.ClientEntity)
+	 * alianza.clientadmin.dto.ClientDTO)
 	 */
-	public List<ClientEntity> searchClientsByCriteria(ClientEntity qryClientEntity) {
+	public List<ClientDTO> searchClientsByCriteria(ClientDTO qryClientDTO) {
 		List<ClientEntity> lstClientEntity = null;
-		Query query = null;
+		List<ClientDTO> lstClientDTO = null;
+		ClientDTO auxClientDTO = null;
 
 		try {
 			if (configProperties.isEnableCachingSave()) {
-				lstClientEntity = new ArrayList<>();
-				lstClientEntity.addAll(proxyCache.getLstClientEntity());
-				if (StringUtils.isNotEmpty(qryClientEntity.getSharedKey())) {
-					lstClientEntity = lstClientEntity.stream().filter(
-							p -> p.getSharedKey().toLowerCase().contains(qryClientEntity.getSharedKey().toLowerCase()))
-							.collect(Collectors.toList());
-				}
-				if (StringUtils.isNotEmpty(qryClientEntity.getBusinessId())) {
-					lstClientEntity = lstClientEntity.stream()
-							.filter(p -> p.getBusinessId().toLowerCase()
-									.contains(qryClientEntity.getBusinessId().toLowerCase()))
-							.collect(Collectors.toList());
-				}
-				if (StringUtils.isNotEmpty(qryClientEntity.getEmail())) {
-					lstClientEntity = lstClientEntity.stream()
-							.filter(p -> p.getEmail().toLowerCase().contains(qryClientEntity.getEmail().toLowerCase()))
-							.collect(Collectors.toList());
-				}
-				if (StringUtils.isNotEmpty(qryClientEntity.getPhone())) {
-					lstClientEntity = lstClientEntity.stream()
-							.filter(p -> p.getPhone().contains(qryClientEntity.getPhone()))
-							.collect(Collectors.toList());
-				}
-				if (qryClientEntity.getAddedDate() != null && qryClientEntity.getLastModifiedDate() != null) {
-					lstClientEntity = lstClientEntity.stream()
-							.filter(p -> p.getAddedDate().after(qryClientEntity.getAddedDate())
-									&& p.getAddedDate().before(qryClientEntity.getLastModifiedDate()))
-							.collect(Collectors.toList());
-				}
+				lstClientEntity = filterCollectionByCriteria(qryClientDTO);
 			} else {
-				query = new Query();
-				if (StringUtils.isNotEmpty(qryClientEntity.getSharedKey())) {
-					query.addCriteria(
-							Criteria.where("sharedKey")
-									.regex(MongoRegexCreator.INSTANCE.toRegularExpression(
-											qryClientEntity.getSharedKey(), MongoRegexCreator.MatchMode.CONTAINING),
-											"i"));
-				}
-				if (StringUtils.isNotEmpty(qryClientEntity.getBusinessId())) {
-					query.addCriteria(
-							Criteria.where("businessId")
-									.regex(MongoRegexCreator.INSTANCE.toRegularExpression(
-											qryClientEntity.getBusinessId(), MongoRegexCreator.MatchMode.CONTAINING),
-											"i"));
-				}
-				if (StringUtils.isNotEmpty(qryClientEntity.getEmail())) {
-					query.addCriteria(Criteria.where("email").regex(MongoRegexCreator.INSTANCE.toRegularExpression(
-							qryClientEntity.getEmail(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
-				}
-				if (StringUtils.isNotEmpty(qryClientEntity.getPhone())) {
-					query.addCriteria(Criteria.where("phone").regex(MongoRegexCreator.INSTANCE.toRegularExpression(
-							qryClientEntity.getPhone(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
-				}
-				if (qryClientEntity.getAddedDate() != null && qryClientEntity.getLastModifiedDate() != null) {
-					query.addCriteria(Criteria.where("addedDate").gte(qryClientEntity.getAddedDate())
-							.lte(qryClientEntity.getLastModifiedDate()));
-				}
-				lstClientEntity = mongoTemplate.find(query, ClientEntity.class);
+				lstClientEntity = filterMongoDBCollectionByCriteria(qryClientDTO);
 			}
-		} catch (DataAccessResourceFailureException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
-			throw e;
-		} catch (MongoSocketOpenException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, ((MongoSocketOpenException) e).getCause()));
-			throw e;
-		} catch (MongoSocketWriteException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, ((MongoSocketWriteException) e).getCause()));
-			throw e;
-		} catch (UncategorizedMongoDbException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			lstClientDTO = new ArrayList<>(lstClientEntity.size());
+			for (ClientEntity clientEntity : lstClientEntity) {
+				auxClientDTO = new ClientDTO();
+				BeanUtils.copyProperties(clientEntity, auxClientDTO);
+				lstClientDTO.add(auxClientDTO);
+			}
+		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
+				| UncategorizedMongoDbException e) {
+			logsMongoDBExceptions(e);
 			throw e;
 		}
 
+		return lstClientDTO;
+	}
+
+	/**
+	 * @param qryClientDTO
+	 * @return
+	 */
+	private List<ClientEntity> filterCollectionByCriteria(ClientDTO qryClientDTO) {
+		List<ClientEntity> lstClientEntity = null;
+
+		lstClientEntity = new ArrayList<>();
+		lstClientEntity.addAll(proxyCache.getLstClientEntity());
+		if (StringUtils.isNotEmpty(qryClientDTO.getSharedKey())) {
+			lstClientEntity = lstClientEntity.stream()
+					.filter(p -> p.getSharedKey().toLowerCase().contains(qryClientDTO.getSharedKey().toLowerCase()))
+					.collect(Collectors.toList());
+		}
+		if (StringUtils.isNotEmpty(qryClientDTO.getBusinessId())) {
+			lstClientEntity = lstClientEntity.stream()
+					.filter(p -> p.getBusinessId().toLowerCase().contains(qryClientDTO.getBusinessId().toLowerCase()))
+					.collect(Collectors.toList());
+		}
+		if (StringUtils.isNotEmpty(qryClientDTO.getEmail())) {
+			lstClientEntity = lstClientEntity.stream()
+					.filter(p -> p.getEmail().toLowerCase().contains(qryClientDTO.getEmail().toLowerCase()))
+					.collect(Collectors.toList());
+		}
+		if (StringUtils.isNotEmpty(qryClientDTO.getPhone())) {
+			lstClientEntity = lstClientEntity.stream().filter(p -> p.getPhone().contains(qryClientDTO.getPhone()))
+					.collect(Collectors.toList());
+		}
+		if (qryClientDTO.getAddedDate() != null && qryClientDTO.getLastModifiedDate() != null) {
+			lstClientEntity = lstClientEntity.stream()
+					.filter(p -> p.getAddedDate().after(qryClientDTO.getAddedDate())
+							&& p.getAddedDate().before(qryClientDTO.getLastModifiedDate()))
+					.collect(Collectors.toList());
+		}
+
 		return lstClientEntity;
+	}
+
+	/**
+	 * @param qryClientDTO
+	 * @return
+	 */
+	private List<ClientEntity> filterMongoDBCollectionByCriteria(ClientDTO qryClientDTO) {
+		Query query = null;
+
+		query = new Query();
+		if (StringUtils.isNotEmpty(qryClientDTO.getSharedKey())) {
+			query.addCriteria(Criteria.where("sharedKey").regex(MongoRegexCreator.INSTANCE
+					.toRegularExpression(qryClientDTO.getSharedKey(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
+		}
+		if (StringUtils.isNotEmpty(qryClientDTO.getBusinessId())) {
+			query.addCriteria(Criteria.where("businessId").regex(MongoRegexCreator.INSTANCE
+					.toRegularExpression(qryClientDTO.getBusinessId(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
+		}
+		if (StringUtils.isNotEmpty(qryClientDTO.getEmail())) {
+			query.addCriteria(Criteria.where("email").regex(MongoRegexCreator.INSTANCE
+					.toRegularExpression(qryClientDTO.getEmail(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
+		}
+		if (StringUtils.isNotEmpty(qryClientDTO.getPhone())) {
+			query.addCriteria(Criteria.where("phone").regex(MongoRegexCreator.INSTANCE
+					.toRegularExpression(qryClientDTO.getPhone(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
+		}
+		if (qryClientDTO.getAddedDate() != null && qryClientDTO.getLastModifiedDate() != null) {
+			query.addCriteria(Criteria.where("addedDate").gte(qryClientDTO.getAddedDate())
+					.lte(qryClientDTO.getLastModifiedDate()));
+		}
+		return mongoTemplate.find(query, ClientEntity.class);
 	}
 
 }

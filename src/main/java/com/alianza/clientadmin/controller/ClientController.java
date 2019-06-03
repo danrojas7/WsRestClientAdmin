@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alianza.clientadmin.entity.ClientEntity;
+import com.alianza.clientadmin.dto.ClientDTO;
 import com.alianza.clientadmin.model.RespuestaServicio;
 import com.alianza.clientadmin.service.ClientService;
 
@@ -46,9 +46,9 @@ public class ClientController {
 	 */
 	@CrossOrigin
 	@PostMapping
-	public ResponseEntity<RespuestaServicio> addClient(@Valid @RequestBody ClientEntity client) {
+	public ResponseEntity<RespuestaServicio> addClient(@Valid @RequestBody ClientDTO client) {
 		RespuestaServicio respuesta = null;
-		ClientEntity clientInserted = null;
+		ClientDTO clientInserted = null;
 
 		respuesta = new RespuestaServicio();
 		try {
@@ -73,9 +73,9 @@ public class ClientController {
 	@CrossOrigin
 	@PostMapping("/{sharedKey}")
 	public ResponseEntity<RespuestaServicio> modifyClient(@Valid @PathVariable("sharedKey") String sharedKey,
-			@Valid @RequestBody ClientEntity client) {
+			@Valid @RequestBody ClientDTO client) {
 		RespuestaServicio respuesta = null;
-		ClientEntity clientInserted = null;
+		ClientDTO clientInserted = null;
 
 		respuesta = new RespuestaServicio();
 		try {
@@ -99,7 +99,7 @@ public class ClientController {
 	@GetMapping
 	public ResponseEntity<RespuestaServicio> getAllClients() {
 		RespuestaServicio respuesta = null;
-		List<ClientEntity> lstClientsInserted = null;
+		List<ClientDTO> lstClientsInserted = null;
 
 		respuesta = new RespuestaServicio();
 		try {
@@ -124,7 +124,7 @@ public class ClientController {
 	@GetMapping("/getBySharedKey/{sharedKey}")
 	public ResponseEntity<RespuestaServicio> getClientBySharedKey(@Valid @PathVariable("sharedKey") String sharedKey) {
 		RespuestaServicio respuesta = null;
-		ClientEntity clientInserted = null;
+		ClientDTO clientInserted = null;
 
 		respuesta = new RespuestaServicio();
 		try {
@@ -159,7 +159,7 @@ public class ClientController {
 			} else if (fileFormat.equalsIgnoreCase("csv")) {
 				mediaType = "text/csv";
 			} else {
-				throw new Exception("Unsupported format file");
+				throw new IllegalArgumentException("Unsupported format file");
 			}
 			baFile = clientService.getExportFileClientList(fileFormat);
 			contentLength = baFile.length;
@@ -172,22 +172,22 @@ public class ClientController {
 	}
 
 	/**
-	 * @param qryClientEntity
+	 * @param qryClientDTO
 	 * @return
 	 */
 	@CrossOrigin
 	@PostMapping("/searchClientsByCriteria")
-	public ResponseEntity<RespuestaServicio> searchClientsByCriteria(@RequestBody ClientEntity qryClientEntity) {
+	public ResponseEntity<RespuestaServicio> searchClientsByCriteria(@RequestBody ClientDTO qryClientDTO) {
 		RespuestaServicio respuesta = null;
-		List<ClientEntity> lstClientEntity = null;
+		List<ClientDTO> lstClientDTO = null;
 
 		respuesta = new RespuestaServicio();
 		try {
-			lstClientEntity = clientService.searchClientsByCriteria(qryClientEntity);
+			lstClientDTO = clientService.searchClientsByCriteria(qryClientDTO);
 
 			respuesta.setStatus(0);
 			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
-			respuesta.setInformation(lstClientEntity);
+			respuesta.setInformation(lstClientDTO);
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
 			respuesta.setStatus(1);

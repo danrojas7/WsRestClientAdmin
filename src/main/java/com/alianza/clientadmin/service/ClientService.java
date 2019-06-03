@@ -3,7 +3,7 @@ package com.alianza.clientadmin.service;
 import java.io.IOException;
 import java.util.List;
 
-import com.alianza.clientadmin.entity.ClientEntity;
+import com.alianza.clientadmin.dto.ClientDTO;
 
 /**
  * @author Daniel Alejandro
@@ -15,25 +15,25 @@ public interface ClientService {
 	 * @param client
 	 * @return
 	 */
-	public ClientEntity addClient(final ClientEntity client);
+	public ClientDTO addClient(final ClientDTO clientDTO);
 
 	/**
 	 * @param sharedKey
 	 * @param client
 	 * @return
 	 */
-	public ClientEntity modifyClient(String sharedKey, ClientEntity client);
+	public ClientDTO modifyClient(String sharedKey, ClientDTO clientDTO);
 
 	/**
 	 * @return
 	 */
-	public List<ClientEntity> getAllClients();
+	public List<ClientDTO> getAllClients();
 
 	/**
 	 * @param sharedKey
 	 * @return
 	 */
-	public ClientEntity getClientBySharedKey(String sharedKey);
+	public ClientDTO getClientBySharedKey(String sharedKey);
 
 	/**
 	 * @param fileFormat
@@ -43,9 +43,9 @@ public interface ClientService {
 	public byte[] getExportFileClientList(String fileFormat) throws IOException;
 
 	/**
-	 * @param qryClientEntity
+	 * @param qryClientDTO
 	 * @return
 	 */
-	public List<ClientEntity> searchClientsByCriteria(ClientEntity qryClientEntity);
+	public List<ClientDTO> searchClientsByCriteria(ClientDTO qryClientDTO);
 
 }

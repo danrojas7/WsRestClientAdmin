@@ -52,18 +52,10 @@ public class GenCsvComponent {
 
 		for (Map<String, Object> row : lstFileContents) {
 			if (isHeaderWrited && writeHeaders) {
-				lstRow = new ArrayList<Object>();
-				for (String header : headerSet) {
-					if (columnFileTitle != null && columnFileTitle.containsKey(header)) {
-						lstRow.add(columnFileTitle.get(header));
-					} else {
-						lstRow.add(header);
-					}
-				}
-				csvWriter.writeNext(lstRow.stream().toArray(String[]::new));
+				writeHeaders(headerSet, columnFileTitle, csvWriter);
 				isHeaderWrited = false;
 			}
-			lstRow = new ArrayList<Object>();
+			lstRow = new ArrayList<>();
 			for (String header : headerSet) {
 				lstRow.add(row.get(header));
 			}
@@ -71,6 +63,26 @@ public class GenCsvComponent {
 		}
 		csvWriter.close();
 		return bos.toByteArray();
+	}
+
+	/**
+	 * @param lstRow
+	 * @param headerSet
+	 * @param columnFileTitle
+	 * @param csvWriter
+	 */
+	private void writeHeaders(Set<String> headerSet, Map<String, String> columnFileTitle, CSVWriter csvWriter) {
+		List<Object> lstRow = null;
+
+		lstRow = new ArrayList<>();
+		for (String header : headerSet) {
+			if (columnFileTitle != null && columnFileTitle.containsKey(header)) {
+				lstRow.add(columnFileTitle.get(header));
+			} else {
+				lstRow.add(header);
+			}
+		}
+		csvWriter.writeNext(lstRow.stream().toArray(String[]::new));
 	}
 
 }
