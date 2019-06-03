@@ -87,7 +87,7 @@ public class ClientController {
 			return new ResponseEntity<>(respuesta, HttpStatus.OK);
 		} catch (Exception e) {
 			respuesta.setStatus(1);
-			respuesta.setInformation(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
+			respuesta.setDescription(String.format(GENERIC_UNSUCCESS_REPONSE, e.getMessage()));
 			return new ResponseEntity<>(respuesta, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

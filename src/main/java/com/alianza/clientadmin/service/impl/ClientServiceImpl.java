@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.bson.types.ObjectId;
@@ -160,13 +161,14 @@ public class ClientServiceImpl implements ClientService {
 	private void logsMongoDBExceptions(Exception e) {
 		if (e instanceof DataAccessResourceFailureException) {
 			LOGGER.error(String.format(GENERIC_ERROR_ACCESS_DB,
-					((DataAccessResourceFailureException) e).getMostSpecificCause()));
+					((DataAccessResourceFailureException) e).getMostSpecificCause(), ExceptionUtils.getStackTrace(e)));
 		} else if (e instanceof MongoSocketOpenException) {
-			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, e.getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_CONNECTION_DB, e.getCause(), ExceptionUtils.getStackTrace(e)));
 		} else if (e instanceof MongoSocketWriteException) {
-			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, e.getCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_WRITING_DB, e.getCause(), ExceptionUtils.getStackTrace(e)));
 		} else if (e instanceof UncategorizedMongoDbException) {
-			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause()));
+			LOGGER.error(String.format(GENERIC_ERROR_DB, ((UncategorizedMongoDbException) e).getMostSpecificCause(),
+					ExceptionUtils.getStackTrace(e)));
 		}
 	}
 
@@ -330,7 +332,7 @@ public class ClientServiceImpl implements ClientService {
 			logsMongoDBExceptions(e);
 			throw e;
 		} catch (IOException e) {
-			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage()));
+			LOGGER.error(String.format(GENERIC_ERROR_GENERATING_FILE, e.getMessage(), ExceptionUtils.getStackTrace(e)));
 			throw e;
 		}
 		return arrayFile;
