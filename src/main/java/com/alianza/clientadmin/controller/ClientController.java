@@ -141,6 +141,10 @@ public class ClientController {
 		}
 	}
 
+	/**
+	 * @param fileFormat
+	 * @return
+	 */
 	@CrossOrigin
 	@GetMapping("/getFile/{fileFormat}")
 	public ResponseEntity<InputStreamResource> getFile(@Valid @PathVariable("fileFormat") String fileFormat) {
@@ -167,6 +171,10 @@ public class ClientController {
 		}
 	}
 
+	/**
+	 * @param qryClientEntity
+	 * @return
+	 */
 	@CrossOrigin
 	@PostMapping("/searchClientsByCriteria")
 	public ResponseEntity<RespuestaServicio> searchClientsByCriteria(@RequestBody ClientEntity qryClientEntity) {

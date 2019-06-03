@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
@@ -30,31 +30,42 @@ public class GenCsvComponent {
 	 * @return
 	 * @throws IOException
 	 */
-	public byte[] generateCsvFile(List<LinkedHashMap<String, Object>> lstFileContents, boolean writeHeaders,
-			char separator, char quotechar, char escapechar, String lineEnd) throws IOException {
+	public byte[] generateCsvFile(List<LinkedHashMap<String, Object>> lstFileContents,
+			Map<String, String> columnFileTitle, boolean writeHeaders, char separator, char quotechar, char escapechar,
+			String lineEnd) throws IOException {
 		CSVWriter csvWriter = null;
 		OutputStreamWriter osWriter = null;
 		ByteArrayOutputStream bos = null;
 		List<Object> lstRow = null;
-		boolean header = true;
+		boolean isHeaderWrited = true;
+		Set<String> headerSet = null;
 
 		bos = new ByteArrayOutputStream();
 		osWriter = new OutputStreamWriter(bos);
 		csvWriter = new CSVWriter(osWriter, separator, quotechar, escapechar, lineEnd);
 
-		
-		for (Map<String, Object> registro : lstFileContents) {
-			if (header && writeHeaders) {
+		if (columnFileTitle != null) {
+			headerSet = columnFileTitle.keySet();
+		} else {
+			headerSet = lstFileContents.get(0).keySet();
+		}
+
+		for (Map<String, Object> row : lstFileContents) {
+			if (isHeaderWrited && writeHeaders) {
 				lstRow = new ArrayList<Object>();
-				for (Entry<String, Object> entry : registro.entrySet()) {
-					lstRow.add(entry.getKey());
+				for (String header : headerSet) {
+					if (columnFileTitle != null && columnFileTitle.containsKey(header)) {
+						lstRow.add(columnFileTitle.get(header));
+					} else {
+						lstRow.add(header);
+					}
 				}
 				csvWriter.writeNext(lstRow.stream().toArray(String[]::new));
-				header = false;
+				isHeaderWrited = false;
 			}
 			lstRow = new ArrayList<Object>();
-			for (Entry<String, Object> entry : registro.entrySet()) {
-				lstRow.add(entry.getValue());
+			for (String header : headerSet) {
+				lstRow.add(row.get(header));
 			}
 			csvWriter.writeNext(lstRow.stream().toArray(String[]::new));
 		}

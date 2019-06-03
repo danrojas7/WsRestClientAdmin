@@ -10,11 +10,13 @@ import static com.alianza.clientadmin.constants.Constants.GENERIC_ERROR_WRITING_
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.LogManager;
@@ -320,7 +322,7 @@ public class ClientServiceImpl implements ClientService {
 						lstFileContents, columnFileTitle, true, String.format(".%s", fileFormat), "content", null,
 						false, true);
 			} else {
-				arrayFile = genCsvComponent.generateCsvFile(lstFileContents, true,
+				arrayFile = genCsvComponent.generateCsvFile(lstFileContents, columnFileTitle, true,
 						configProperties.getDefaultCsvSeparator(), configProperties.getDefaultCsvQuoteChar(),
 						configProperties.getDefaultCsvEscapeChar(), configProperties.getDefaultCsvLineEnd());
 			}
@@ -367,7 +369,35 @@ public class ClientServiceImpl implements ClientService {
 
 		try {
 			if (configProperties.isEnableCachingSave()) {
-
+				lstClientEntity = new ArrayList<>();
+				lstClientEntity.addAll(proxyCache.getLstClientEntity());
+				if (StringUtils.isNotEmpty(qryClientEntity.getSharedKey())) {
+					lstClientEntity = lstClientEntity.stream().filter(
+							p -> p.getSharedKey().toLowerCase().contains(qryClientEntity.getSharedKey().toLowerCase()))
+							.collect(Collectors.toList());
+				}
+				if (StringUtils.isNotEmpty(qryClientEntity.getBusinessId())) {
+					lstClientEntity = lstClientEntity.stream()
+							.filter(p -> p.getBusinessId().toLowerCase()
+									.contains(qryClientEntity.getBusinessId().toLowerCase()))
+							.collect(Collectors.toList());
+				}
+				if (StringUtils.isNotEmpty(qryClientEntity.getEmail())) {
+					lstClientEntity = lstClientEntity.stream()
+							.filter(p -> p.getEmail().toLowerCase().contains(qryClientEntity.getEmail().toLowerCase()))
+							.collect(Collectors.toList());
+				}
+				if (StringUtils.isNotEmpty(qryClientEntity.getPhone())) {
+					lstClientEntity = lstClientEntity.stream()
+							.filter(p -> p.getPhone().contains(qryClientEntity.getPhone()))
+							.collect(Collectors.toList());
+				}
+				if (qryClientEntity.getAddedDate() != null && qryClientEntity.getLastModifiedDate() != null) {
+					lstClientEntity = lstClientEntity.stream()
+							.filter(p -> p.getAddedDate().after(qryClientEntity.getAddedDate())
+									&& p.getAddedDate().before(qryClientEntity.getLastModifiedDate()))
+							.collect(Collectors.toList());
+				}
 			} else {
 				query = new Query();
 				if (StringUtils.isNotEmpty(qryClientEntity.getSharedKey())) {
@@ -393,7 +423,8 @@ public class ClientServiceImpl implements ClientService {
 							qryClientEntity.getPhone(), MongoRegexCreator.MatchMode.CONTAINING), "i"));
 				}
 				if (qryClientEntity.getAddedDate() != null && qryClientEntity.getLastModifiedDate() != null) {
-
+					query.addCriteria(Criteria.where("addedDate").gte(qryClientEntity.getAddedDate())
+							.lte(qryClientEntity.getLastModifiedDate()));
 				}
 				lstClientEntity = mongoTemplate.find(query, ClientEntity.class);
 			}
