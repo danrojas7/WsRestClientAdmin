@@ -206,49 +206,11 @@ public class ClientServiceImpl implements ClientService {
 	 */
 	@Override
 	public ClientDTO modifyClient(String sharedKey, ClientDTO clientDTO) {
-		Optional<ClientEntity> oClientPersisted = null;
-		ClientEntity clientPersisted = null;
-		Optional<ClientEntity> oSharedKeyToUpdate = null;
-		ClientEntity sharedKeyToUpdate = null;
-		ObjectId oId = null;
 		try {
 			if (configProperties.isEnableCachingSave()) {
-				clientPersisted = proxyCache.getLstClientEntity().stream()
-						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
-				if (clientPersisted != null) {
-					if (!sharedKey.equalsIgnoreCase(clientDTO.getSharedKey())) {
-						sharedKeyToUpdate = proxyCache.getLstClientEntity().stream()
-								.filter(p -> p.getSharedKey().equalsIgnoreCase(clientDTO.getSharedKey())).findAny()
-								.orElse(null);
-						if (sharedKeyToUpdate != null) {
-							throw new IllegalArgumentException(
-									String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
-						}
-					}
-					clientDTO.setLastModifiedDate(new Date());
-					BeanUtils.copyProperties(clientDTO, clientPersisted);
-				} else {
-					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
-				}
+				updateClientCache(sharedKey, clientDTO);
 			} else {
-				oClientPersisted = clientRepository.findBySharedKey(sharedKey);
-				if (oClientPersisted.isPresent()) {
-					if (!sharedKey.equalsIgnoreCase(clientDTO.getSharedKey())) {
-						oSharedKeyToUpdate = clientRepository.findBySharedKey(clientDTO.getSharedKey());
-						if (oSharedKeyToUpdate.isPresent()) {
-							throw new IllegalArgumentException(
-									String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
-						}
-					}
-					clientPersisted = oClientPersisted.get();
-					oId = clientPersisted.getId();
-					clientDTO.setLastModifiedDate(new Date());
-					BeanUtils.copyProperties(clientDTO, clientPersisted);
-					clientPersisted.setId(oId);
-					clientRepository.save(clientPersisted);
-				} else {
-					throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
-				}
+				updateClientDatabase(sharedKey, clientDTO);
 			}
 		} catch (DataAccessResourceFailureException | MongoSocketOpenException | MongoSocketWriteException
 				| UncategorizedMongoDbException e) {
@@ -256,6 +218,71 @@ public class ClientServiceImpl implements ClientService {
 			throw e;
 		}
 		return clientDTO;
+	}
+
+	/**
+	 * Método auxiliar que actualiza la información del cliente en la base de
+	 * clientes almacenados en caché
+	 * 
+	 * @param sharedKey llave del cliente a actualizar en base de datos o en caché
+	 *                  según la configuración del microservicio
+	 * @param clientDTO DTO de la clase cliente con la nueva información a
+	 *                  actualizar del mismo
+	 */
+	private void updateClientCache(String sharedKey, ClientDTO clientDTO) {
+		ClientEntity clientPersisted = null;
+		ClientEntity sharedKeyToUpdate = null;
+
+		clientPersisted = proxyCache.getLstClientEntity().stream()
+				.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
+		if (clientPersisted != null) {
+			if (!sharedKey.equalsIgnoreCase(clientDTO.getSharedKey())) {
+				sharedKeyToUpdate = proxyCache.getLstClientEntity().stream()
+						.filter(p -> p.getSharedKey().equalsIgnoreCase(clientDTO.getSharedKey())).findAny()
+						.orElse(null);
+				if (sharedKeyToUpdate != null) {
+					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
+				}
+			}
+			clientDTO.setLastModifiedDate(new Date());
+			BeanUtils.copyProperties(clientDTO, clientPersisted);
+		} else {
+			throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
+		}
+	}
+
+	/**
+	 * Método que actualiza un cliente de la base de clientes persistida en la
+	 * colecciónn de la base de datos de MongoDB
+	 * 
+	 * @param sharedKey llave del cliente a actualizar en base de datos o en caché
+	 *                  según la configuración del microservicio
+	 * @param clientDTO DTO de la clase cliente con la nueva información a
+	 *                  actualizar del mismo
+	 */
+	private void updateClientDatabase(String sharedKey, ClientDTO clientDTO) {
+		ClientEntity clientPersisted = null;
+		Optional<ClientEntity> oClientPersisted = null;
+		Optional<ClientEntity> oSharedKeyToUpdate = null;
+		ObjectId oId = null;
+
+		oClientPersisted = clientRepository.findBySharedKey(sharedKey);
+		if (oClientPersisted.isPresent()) {
+			if (!sharedKey.equalsIgnoreCase(clientDTO.getSharedKey())) {
+				oSharedKeyToUpdate = clientRepository.findBySharedKey(clientDTO.getSharedKey());
+				if (oSharedKeyToUpdate.isPresent()) {
+					throw new IllegalArgumentException(String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
+				}
+			}
+			clientPersisted = oClientPersisted.get();
+			oId = clientPersisted.getId();
+			clientDTO.setLastModifiedDate(new Date());
+			BeanUtils.copyProperties(clientDTO, clientPersisted);
+			clientPersisted.setId(oId);
+			clientRepository.save(clientPersisted);
+		} else {
+			throw new IllegalArgumentException(String.format(CLIENT_DOES_NOT_EXIST_ERROR, sharedKey));
+		}
 	}
 
 	/*
