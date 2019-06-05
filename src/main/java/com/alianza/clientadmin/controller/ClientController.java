@@ -23,10 +23,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.alianza.clientadmin.dto.ClientDTO;
-import com.alianza.clientadmin.model.RespuestaServicio;
+import com.alianza.clientadmin.model.ResponseService;
 import com.alianza.clientadmin.service.ClientService;
 
 /**
+ * Clase controladora en la que se exponen todas las operaciones del API rest
+ * desarrollada
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -35,24 +38,42 @@ import com.alianza.clientadmin.service.ClientService;
 public class ClientController {
 
 	/**
+	 * Objeto instancia de la clase servicio, en el que se invoca los métodos de
+	 * negocio del microservicio
+	 */
+	private final ClientService clientService;
+
+	/**
+	 * Constructor de la clase en el que se inicializan los objetos o componentes
+	 * que acoplará SpringBoot al momento de inicializar la clase
+	 * 
+	 * @param clientService Objeto instancia de la clase servicio, en el que se
+	 *                      invoca los métodos de negocio del microservicio
 	 * 
 	 */
 	@Autowired
-	private ClientService clientService;
+	public ClientController(ClientService clientService) {
+		super();
+		this.clientService = clientService;
+	}
 
 	/**
-	 * @param client
-	 * @return
+	 * Método POST en el que se inserta a un nuevo cliente
+	 * 
+	 * @param client Objeto instancia de la clase DTO del cliente con la información
+	 *               del mismo a persistir
+	 * @return Instancia del cliente ya persistido en caché o en base de datos según
+	 *         configuración del microservicio
 	 */
 	@CrossOrigin
 	@PostMapping
-	public ResponseEntity<RespuestaServicio> addClient(@Valid @RequestBody ClientDTO client) {
-		RespuestaServicio respuesta = null;
+	public ResponseEntity<ResponseService> addClient(@Valid @RequestBody ClientDTO clientDTO) {
+		ResponseService respuesta = null;
 		ClientDTO clientInserted = null;
 
-		respuesta = new RespuestaServicio();
+		respuesta = new ResponseService();
 		try {
-			clientInserted = clientService.addClient(client);
+			clientInserted = clientService.addClient(clientDTO);
 
 			respuesta.setStatus(0);
 			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
@@ -66,20 +87,25 @@ public class ClientController {
 	}
 
 	/**
-	 * @param sharedKey
-	 * @param client
-	 * @return
+	 * Método utilizado para actualizar la información de un cliente existente
+	 * 
+	 * @param sharedKey llave del cliente a actualizar en base de datos o en caché
+	 *                  según la configuración del microservicio
+	 * @param client    DTO de la clase cliente con la nueva información a
+	 *                  actualizar del mismo
+	 * @return Objeto instancia de la clase DTO de cliente ya persistido en base de
+	 *         datos o en la caché según la configuración del microservicio
 	 */
 	@CrossOrigin
 	@PostMapping("/{sharedKey}")
-	public ResponseEntity<RespuestaServicio> modifyClient(@Valid @PathVariable("sharedKey") String sharedKey,
-			@Valid @RequestBody ClientDTO client) {
-		RespuestaServicio respuesta = null;
+	public ResponseEntity<ResponseService> modifyClient(@Valid @PathVariable("sharedKey") String sharedKey,
+			@Valid @RequestBody ClientDTO clientDTO) {
+		ResponseService respuesta = null;
 		ClientDTO clientInserted = null;
 
-		respuesta = new RespuestaServicio();
+		respuesta = new ResponseService();
 		try {
-			clientInserted = clientService.modifyClient(sharedKey, client);
+			clientInserted = clientService.modifyClient(sharedKey, clientDTO);
 
 			respuesta.setStatus(0);
 			respuesta.setDescription(GENERIC_SUCCESS_RESPONSE);
@@ -93,15 +119,19 @@ public class ClientController {
 	}
 
 	/**
-	 * @return
+	 * Método utilizado para consultar todos los clientes almacenados en caché o en
+	 * la base de datos
+	 * 
+	 * @return Listado de clientes con la información de los clientes persistidos en
+	 *         caché o en base de datos según la configuración del microservicio
 	 */
 	@CrossOrigin
 	@GetMapping
-	public ResponseEntity<RespuestaServicio> getAllClients() {
-		RespuestaServicio respuesta = null;
+	public ResponseEntity<ResponseService> getAllClients() {
+		ResponseService respuesta = null;
 		List<ClientDTO> lstClientsInserted = null;
 
-		respuesta = new RespuestaServicio();
+		respuesta = new ResponseService();
 		try {
 			lstClientsInserted = clientService.getAllClients();
 
@@ -117,16 +147,20 @@ public class ClientController {
 	}
 
 	/**
-	 * @param sharedKey
-	 * @return
+	 * Método para obtener un cliente dependiendo del shared key enviado como
+	 * parámetro
+	 * 
+	 * @param sharedKey Shared key del cliente a retornar
+	 * @return Cliente coincidente con el shared key enviado, y que se encuentre
+	 *         persistido en base de datos o en caché
 	 */
 	@CrossOrigin
 	@GetMapping("/getBySharedKey/{sharedKey}")
-	public ResponseEntity<RespuestaServicio> getClientBySharedKey(@Valid @PathVariable("sharedKey") String sharedKey) {
-		RespuestaServicio respuesta = null;
+	public ResponseEntity<ResponseService> getClientBySharedKey(@Valid @PathVariable("sharedKey") String sharedKey) {
+		ResponseService respuesta = null;
 		ClientDTO clientInserted = null;
 
-		respuesta = new RespuestaServicio();
+		respuesta = new ResponseService();
 		try {
 			clientInserted = clientService.getClientBySharedKey(sharedKey);
 
@@ -142,8 +176,19 @@ public class ClientController {
 	}
 
 	/**
-	 * @param fileFormat
-	 * @return
+	 * Método utilizado para exportar el contenido de todos los clientes almacenados
+	 * en la base de datos o en la caché, dependiendo de la configuración del
+	 * microservicio, a un archivo de hoja de cálculo de Microsoft Office Excel 2003
+	 * o 2007, o a un CSV, dependiendo de la extensión del tipo de archivo requerido
+	 * y enviada como parámetro
+	 * 
+	 * @param fileFormat Formato del archivo a generar (.xls para un archivo de hoja
+	 *                   de cáculo de Microsoft Office Excel 2003, .xlsx para un
+	 *                   archivo de hoja de cáculo de Microsoft Office Excel 2007,
+	 *                   .csv para un archivo de texto separado por comas)
+	 * @return ResponseEntity con la data del archivo generado dentro de un
+	 *         InputStream, para que se active la descarga mediante un modal de
+	 *         descarga al cliente
 	 */
 	@CrossOrigin
 	@GetMapping("/getFile/{fileFormat}")
@@ -172,16 +217,24 @@ public class ClientController {
 	}
 
 	/**
-	 * @param qryClientDTO
-	 * @return
+	 * Método utilizado para buscar por uno o varios criterios los clientes con
+	 * coinciden con dichos criterios, los criterios null o no enviados se omiten
+	 * como filtros de la clase
+	 * 
+	 * @param qryClientDTO Objeto instancia de la clase DTO de cliente con los
+	 *                     atributos a enviar como filtros, para retornar los
+	 *                     clientes que coinciden dentro de la base de datos o
+	 *                     almacenados en caché
+	 * @return Listado de clientes que coinciden con los criterios de entrada
+	 *         enviados
 	 */
 	@CrossOrigin
 	@PostMapping("/searchClientsByCriteria")
-	public ResponseEntity<RespuestaServicio> searchClientsByCriteria(@RequestBody ClientDTO qryClientDTO) {
-		RespuestaServicio respuesta = null;
+	public ResponseEntity<ResponseService> searchClientsByCriteria(@RequestBody ClientDTO qryClientDTO) {
+		ResponseService respuesta = null;
 		List<ClientDTO> lstClientDTO = null;
 
-		respuesta = new RespuestaServicio();
+		respuesta = new ResponseService();
 		try {
 			lstClientDTO = clientService.searchClientsByCriteria(qryClientDTO);
 

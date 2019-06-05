@@ -9,6 +9,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
+ * Clase DTO de cliente, en la que se establecen los atributos de mapeo a o
+ * desde JSON, y los validadores utilizados en SpringBoot para los campos de
+ * entrada requeridos
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -39,15 +43,15 @@ public class ClientDTO {
 	private Date lastModifiedDate;
 
 	/**
-	 * No args constructor for use in serialization
-	 *
+	 * Constructor de la clase
 	 */
 	public ClientDTO() {
 		super();
 	}
 
 	/**
-	 *
+	 * Constructor de la clase
+	 * 
 	 * @param addedDate
 	 * @param phone
 	 * @param email

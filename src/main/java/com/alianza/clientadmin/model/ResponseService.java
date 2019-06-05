@@ -1,16 +1,21 @@
 package com.alianza.clientadmin.model;
 
 /**
+ * Clase de respuesta estándar del servicio
+ * 
  * @author Daniel Alejandro
  *
  */
-public class RespuestaServicio {
+public class ResponseService {
 
 	private int status;
 	private String description;
 	private Object information;
 
-	public RespuestaServicio() {
+	/**
+	 * Constructor de la clase
+	 */
+	public ResponseService() {
 		super();
 	}
 

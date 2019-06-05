@@ -8,6 +8,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
+ * Clase Entity con los atributos de la colección en MongoDB, a almacenar dicha
+ * información en la base de datos
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -24,7 +27,7 @@ public class ClientEntity {
 	private Date lastModifiedDate;
 
 	/**
-	 * No args constructor for use in serialization
+	 * Constructor de la clase
 	 *
 	 */
 	public ClientEntity() {
@@ -32,7 +35,8 @@ public class ClientEntity {
 	}
 
 	/**
-	 *
+	 * Constructor de la clase
+	 * 
 	 * @param addedDate
 	 * @param phone
 	 * @param email

@@ -48,6 +48,9 @@ import com.mongodb.MongoSocketOpenException;
 import com.mongodb.MongoSocketWriteException;
 
 /**
+ * Clase servicio en la que se define la lógica de negocio del microservicio de
+ * administración de clientes
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -55,47 +58,65 @@ import com.mongodb.MongoSocketWriteException;
 public class ClientServiceImpl implements ClientService {
 
 	/**
-	 * 
+	 * Logger del Log4j inicializado para la clase actual
 	 */
 	private static final Logger LOGGER = LogManager.getLogger(ClientServiceImpl.class);
 
 	/**
-	 * 
+	 * Objeto instancia de la clase de mapeo de la configuración del microservicio
 	 */
 	private final ConfigProperties configProperties;
 
 	/**
-	 * 
+	 * Objeto instancia de la clase componente que sirve como fachada para acceder a
+	 * los métodos de la caché de clientes de SpringBoot
 	 */
 	private final ProxyCache proxyCache;
 
 	/**
-	 * 
+	 * Objeto instancia de la clase repositorio en la que se define la lógica de
+	 * persistencia y el CRUD del cliente en la base de datos de MongoDB
 	 */
 	private final ClientRepository clientRepository;
 
 	/**
-	 * 
+	 * Objeto instancia de la clase componente, utilizada para generar el archivo de
+	 * hoja de cálculo de Microsoft Office Excel
 	 */
 	private final GenExcelComponent genExcelComponent;
 
 	/**
-	 * 
+	 * Objeto instancia de la clase componente, utilizada para generar el archivo de
+	 * texto separado por comas
 	 */
 	private final GenCsvComponent genCsvComponent;
 
 	/**
-	* 
-	*/
+	 * Objeto de la clase MongoTemplate, utilizada para la ejecución de consultas
+	 * hacia la colección de clientes, almacenada en la base de datos de MongoDB
+	 */
 	private final MongoTemplate mongoTemplate;
 
 	/**
-	 * @param configProperties
-	 * @param proxyCache
-	 * @param clientRepository
-	 * @param genExcelComponent
-	 * @param genCsvComponent
-	 * @param mongoTemplate
+	 * Constructor de la clase en el que se inicializa las clases repositorios,
+	 * componentes automáticamente acopladas por SpringBoot
+	 * 
+	 * @param configProperties  Objeto instancia de la clase de mapeo de la
+	 *                          configuración del microservicio
+	 * @param proxyCache        Objeto instancia de la clase componente que sirve
+	 *                          como fachada para acceder a los métodos de la caché
+	 *                          de clientes de SpringBoot
+	 * @param clientRepository  Objeto instancia de la clase repositorio en la que
+	 *                          se define la lógica de persistencia y el CRUD del
+	 *                          cliente en la base de datos de MongoDB
+	 * @param genExcelComponent Objeto instancia de la clase componente, utilizada
+	 *                          para generar el archivo de hoja de cálculo de
+	 *                          Microsoft Office Excel
+	 * @param genCsvComponent   Objeto instancia de la clase componente, utilizada
+	 *                          para generar el archivo de texto separado por comas
+	 * @param mongoTemplate     Objeto de la clase MongoTemplate, utilizada para la
+	 *                          ejecución de consultas hacia la colección de
+	 *                          clientes, almacenada en la base de datos de MongoDB
 	 */
 	@Autowired
 	public ClientServiceImpl(ConfigProperties configProperties, ProxyCache proxyCache,
@@ -156,7 +177,11 @@ public class ClientServiceImpl implements ClientService {
 	}
 
 	/**
-	 * @param e
+	 * Método usado para escribir en el log4j la traza de error con el detalle y el
+	 * stacktrace, dependiendo del tipo de excepción de la base de datos de MongoDB,
+	 * con una descripción más genérica que indica el error que se produjo
+	 * 
+	 * @param e Excepción a escribir en Log
 	 */
 	private void logsMongoDBExceptions(Exception e) {
 		if (e instanceof DataAccessResourceFailureException) {
@@ -183,12 +208,23 @@ public class ClientServiceImpl implements ClientService {
 	public ClientDTO modifyClient(String sharedKey, ClientDTO clientDTO) {
 		Optional<ClientEntity> oClientPersisted = null;
 		ClientEntity clientPersisted = null;
+		Optional<ClientEntity> oSharedKeyToUpdate = null;
+		ClientEntity sharedKeyToUpdate = null;
 		ObjectId oId = null;
 		try {
 			if (configProperties.isEnableCachingSave()) {
 				clientPersisted = proxyCache.getLstClientEntity().stream()
 						.filter(p -> p.getSharedKey().equalsIgnoreCase(sharedKey)).findAny().orElse(null);
 				if (clientPersisted != null) {
+					if (!sharedKey.equalsIgnoreCase(clientDTO.getSharedKey())) {
+						sharedKeyToUpdate = proxyCache.getLstClientEntity().stream()
+								.filter(p -> p.getSharedKey().equalsIgnoreCase(clientDTO.getSharedKey())).findAny()
+								.orElse(null);
+						if (sharedKeyToUpdate != null) {
+							throw new IllegalArgumentException(
+									String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
+						}
+					}
 					clientDTO.setLastModifiedDate(new Date());
 					BeanUtils.copyProperties(clientDTO, clientPersisted);
 				} else {
@@ -197,6 +233,13 @@ public class ClientServiceImpl implements ClientService {
 			} else {
 				oClientPersisted = clientRepository.findBySharedKey(sharedKey);
 				if (oClientPersisted.isPresent()) {
+					if (!sharedKey.equalsIgnoreCase(clientDTO.getSharedKey())) {
+						oSharedKeyToUpdate = clientRepository.findBySharedKey(clientDTO.getSharedKey());
+						if (oSharedKeyToUpdate.isPresent()) {
+							throw new IllegalArgumentException(
+									String.format(CLIENT_EXIST_ERROR, clientDTO.getSharedKey()));
+						}
+					}
 					clientPersisted = oClientPersisted.get();
 					oId = clientPersisted.getId();
 					clientDTO.setLastModifiedDate(new Date());
@@ -345,6 +388,7 @@ public class ClientServiceImpl implements ClientService {
 	 * com.alianza.clientadmin.service.ClientService#searchClientsByCriteria(com.
 	 * alianza.clientadmin.dto.ClientDTO)
 	 */
+	@Override
 	public List<ClientDTO> searchClientsByCriteria(ClientDTO qryClientDTO) {
 		List<ClientEntity> lstClientEntity = null;
 		List<ClientDTO> lstClientDTO = null;
@@ -372,8 +416,13 @@ public class ClientServiceImpl implements ClientService {
 	}
 
 	/**
-	 * @param qryClientDTO
-	 * @return
+	 * Método auxiliar para filtrar de la colección almacenada en la caché de
+	 * clientes implementada con SpringBoot, de acuerdo a los atributos enviados
+	 * 
+	 * @param qryClientDTO Objeto instancia de la clase DTO de clientes con los
+	 *                     filtros a utilizar
+	 * @return Listado de clientes almacenados en caché que coincidan con los datos
+	 *         enviados
 	 */
 	private List<ClientEntity> filterCollectionByCriteria(ClientDTO qryClientDTO) {
 		List<ClientEntity> lstClientEntity = null;
@@ -410,8 +459,14 @@ public class ClientServiceImpl implements ClientService {
 	}
 
 	/**
-	 * @param qryClientDTO
-	 * @return
+	 * Método auxiliar utilizado para construir los filtros, mediante los campos
+	 * enviados, para realizar la consulta de clientes que coincidan almacenados en
+	 * la base datos de MongoDB
+	 * 
+	 * @param qryClientDTO Objeto instancia de la clase DTO de clientes con los
+	 *                     filtros a utilizar
+	 * @return Listado de clientes almacenados en la base de datos que coincidan con
+	 *         los datos enviados
 	 */
 	private List<ClientEntity> filterMongoDBCollectionByCriteria(ClientDTO qryClientDTO) {
 		Query query = null;

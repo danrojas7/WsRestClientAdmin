@@ -4,6 +4,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Clase que se utiliza como mapeo de las propiedades definidas en el archivo
+ * application.properties del microservicio
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -19,6 +22,9 @@ public class ConfigProperties {
 	private String defaultHeadersExportFile;
 	private String defaultDateFormat;
 
+	/**
+	 * Constructor de la clase
+	 */
 	public ConfigProperties() {
 		super();
 	}

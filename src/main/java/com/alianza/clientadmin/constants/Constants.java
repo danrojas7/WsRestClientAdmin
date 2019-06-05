@@ -1,6 +1,8 @@
 package com.alianza.clientadmin.constants;
 
 /**
+ * Clase de constantes definidas para el microservicio
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -20,6 +22,9 @@ public class Constants {
 	public static final String CLIENT_DOES_NOT_EXIST_ERROR = "Client by sharedKey \"%s\" doesn't exists";
 	public static final String CLIENT_EXIST_ERROR = "Client by sharedKey \"%s\" exists";
 
+	/**
+	 * Constructor de la clase
+	 */
 	private Constants() {
 		super();
 	}

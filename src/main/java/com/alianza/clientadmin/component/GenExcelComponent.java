@@ -22,23 +22,67 @@ import org.apache.poi.xssf.usermodel.XSSFFormulaEvaluator;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 
+/**
+ * Clase comoponente en la que se define la lógica genérica para convertir una
+ * lista de mapas, en un archivo de Microsoft Office Excel 2003 ó 2007
+ * 
+ * @author Daniel Alejandro
+ *
+ */
 @Component
 public class GenExcelComponent {
 
 	/**
-	 * @param baFile
-	 * @param initPostRow
-	 * @param initPosColumn
-	 * @param lstFileContents
-	 * @param columnFileTitle
-	 * @param writeHeader
-	 * @param fileName
-	 * @param sheetName
-	 * @param sheetNumber
-	 * @param updateFormulas
-	 * @param makingContent
-	 * @return
-	 * @throws IOException
+	 * Método que genera de un contenido de tipo lista de mapas, a un archivo de
+	 * Microsoft Office Excel 2003 ó 2007, con los atributos de configuración
+	 * enviados
+	 * 
+	 * @param baFile          Bytearray de un archivo de Excel existente, en caso de
+	 *                        que se vaya a utilizar como un archivo de plantilla
+	 *                        para modificarlo y agregar la información enviada como
+	 *                        parámetro
+	 * @param initPostRow     Posición inicial del registro en el que el método
+	 *                        empezará a escribir la información enviada, dentro de
+	 *                        la hoja de cáculo
+	 * @param initPosColumn   Posición inicial de la columna en el que el método
+	 *                        empezará a escribir la información enviada, dentro de
+	 *                        la hoja de cáculo
+	 * @param lstFileContents Lista de mapas, con el nombre del campo como llave, y
+	 *                        el contenido del archivo como valor, a exportar al
+	 *                        archivo de hoja de cálculo
+	 * @param columnFileTitle Mapa en el que se define el nombre del atributo,
+	 *                        definido como llave, y el nombre final que llevará la
+	 *                        columna de información como valor, para definir los
+	 *                        encabezados finales del archivo de hoja de cáculo, si
+	 *                        este atributo no se envía, se toma por defecto el
+	 *                        nombre del atributo como llave extraído del primer
+	 *                        registro
+	 * @param writeHeader     Bandera que indica si en el archivo de hoja de cálculo
+	 *                        se van a escribir los nombres de las columnas o no
+	 * @param fileName        Nombre que va a llevar el archivo de hoja de cáculo
+	 *                        generado, es utilizado para definir el formato del
+	 *                        archivo y así las clases controladoras de la librería
+	 *                        de Apache POI a utilizar
+	 * @param sheetName       Nombre de la hoja de cálculo en donde se va a exportar
+	 *                        la información dentro del libro de la hoja de cáculo
+	 * @param sheetNumber     Número índice de la hoja de cálculo en donde se va a
+	 *                        escribir la información, útil si el archivo a
+	 *                        modificar es un archivo plantilla, y no se conoce la
+	 *                        hoja a escribir sino por el índice o posición relativa
+	 *                        dentro del libro
+	 * @param updateFormulas  Bandera que indica si se actualizarán todos los campos
+	 *                        formulados del archivo de hoja de cáculo o no, de
+	 *                        acuerdo a la información agregada
+	 * @param makingContent   Bandera que indica si se van a crear los registros del
+	 *                        archivo de Excel (nuevas celdas), en caso de un
+	 *                        archivo nuevo, o si se va a modificar en caso de
+	 *                        agregar contenido a un archivo de Excel utilizado como
+	 *                        plantilla
+	 * @return Bytearray con el contenido del archivo de Excel generado a partir de
+	 *         la información enviada
+	 * @throws IOException Si ocurre un error inesperado al momento de convertir en
+	 *                     bytearray la informacón del libro de Excel, contenido
+	 *                     dentro de las clases controladoras de Apache POI
 	 */
 	public byte[] generarByteArrayArchivoExcel(byte[] baFile, int initPostRow, int initPosColumn,
 			List<LinkedHashMap<String, Object>> lstFileContents, Map<String, String> columnFileTitle,
@@ -88,10 +132,23 @@ public class GenExcelComponent {
 	}
 
 	/**
-	 * @param baFile
-	 * @param fileName
-	 * @return
-	 * @throws Exception
+	 * Método auxiliar utilizado para inicializar las clases controladoras de Apache
+	 * POI, para administrar el contenido del archivo de Excel, a partir de un
+	 * archivo nuevo o de un archivo de Excel empleado como plantilla, y también
+	 * dependiendo del tipo de formato de archivo de Excel a generar (Hoja de
+	 * cálculo de Microsoft Office Excel 2003, .xls, ó una hoja de cálculo de
+	 * Microsoft Office Excel 2007, .xlsx)
+	 * 
+	 * @param baFile   Bytearray de un archivo de Excel existente, en caso de que se
+	 *                 vaya a utilizar como un archivo de plantilla para modificarlo
+	 *                 y agregar la información enviada
+	 * @param fileName Nombre que va a llevar el archivo de hoja de cáculo generado,
+	 *                 es utilizado para definir el formato del archivo y así las
+	 *                 clases controladoras de la librería de Apache POI a utilizar
+	 * @return Objeto Workbook de Apache POI, representación de un archivo de
+	 *         Microsoft Office Excel de Apache POI, para administrar su contenido
+	 * @throws IOException Si ocurre un error inesperado al momento de generar la
+	 *                     instancia del
 	 */
 	private Workbook openExcelFileInWorkbook(byte[] baFile, String fileName) throws IOException {
 		Workbook objExcelBook = null;
@@ -116,11 +173,24 @@ public class GenExcelComponent {
 	}
 
 	/**
-	 * @param baFile
-	 * @param objExcelBook
-	 * @param sheetName
-	 * @param sheetNumber
-	 * @return
+	 * Método auxiliar utlizado para inicializar la clase para manipular el
+	 * contenido de una hoja de cálculo de Microsoft Office Excel
+	 * 
+	 * @param baFile       Bytearray de un archivo de Excel existente, en caso de
+	 *                     que se vaya a utilizar como un archivo de plantilla para
+	 *                     modificarlo y agregar la información enviada
+	 * @param objExcelBook Clase de Apache POI, utilizada para administrar el
+	 *                     contenido del archivo de hoja de cáculo de Microsoft
+	 *                     Office Excel
+	 * @param sheetName    Nombre de la hoja de cálculo en donde se va a exportar la
+	 *                     información dentro del libro de la hoja de cáculo
+	 * @param sheetNumber  Número índice de la hoja de cálculo en donde se va a
+	 *                     escribir la información, útil si el archivo a modificar
+	 *                     es un archivo plantilla, y no se conoce la hoja a
+	 *                     escribir sino por el índice o posición relativa dentro
+	 *                     del libro
+	 * @return Objeto Sheet de Apache POI, utilizado para administrar el contenido
+	 *         de la hoja del archivo de Excel
 	 */
 	private Sheet openExcelSheet(byte[] baFile, Workbook objExcelBook, String sheetName, Integer sheetNumber) {
 		Sheet objExcelSheet = null;
@@ -153,12 +223,33 @@ public class GenExcelComponent {
 	}
 
 	/**
-	 * @param objExcelSheet
-	 * @param headerSet
-	 * @param makingContent
-	 * @param columnFileTitle
-	 * @param initPostRow
-	 * @param initPosColumn
+	 * Método auxiliar para escribir los encabezados del archivo de Excel, como los
+	 * encabezados de las columnas
+	 * 
+	 * @param objExcelSheet   Objeto Sheet de Apache POI, utilizado para administrar
+	 *                        el contenido de la hoja del archivo de Excel
+	 * @param headerSet       Conjunto de cadena de caracteres, con los campos como
+	 *                        llaves del mapa, para recuperar el contenido de los
+	 *                        mapas que representan los registros a escribir en la
+	 *                        hoja de cálculo
+	 * @param makingContent   Bandera que indica si se van a crear los registros del
+	 *                        archivo de Excel (nuevas celdas), en caso de un
+	 *                        archivo nuevo, o si se va a modificar en caso de
+	 *                        agregar contenido a un archivo de Excel utilizado como
+	 *                        plantilla
+	 * @param columnFileTitle Mapa en el que se define el nombre del atributo,
+	 *                        definido como llave, y el nombre final que llevará la
+	 *                        columna de información como valor, para definir los
+	 *                        encabezados finales del archivo de hoja de cáculo, si
+	 *                        este atributo no se envía, se toma por defecto el
+	 *                        nombre del atributo como llave extraído del primer
+	 *                        registro
+	 * @param initPostRow     Posición inicial del registro en el que el método
+	 *                        empezará a escribir la información enviada, dentro de
+	 *                        la hoja de cáculo
+	 * @param initPosColumn   Posición inicial de la columna en el que el método
+	 *                        empezará a escribir la información enviada, dentro de
+	 *                        la hoja de cáculo
 	 */
 	private void writeExcelHeaders(Sheet objExcelSheet, Set<String> headerSet, boolean makingContent,
 			Map<String, String> columnFileTitle, int initPostRow, int initPosColumn) {
@@ -185,12 +276,25 @@ public class GenExcelComponent {
 	}
 
 	/**
-	 * @param objExcelSheet
-	 * @param headerSet
-	 * @param makingContent
-	 * @param row
-	 * @param initPosColumn
-	 * @param countRow
+	 * Método auxiliar para escribir el contenido en la hoja de cálculo
+	 * 
+	 * @param objExcelSheet Objeto Sheet de Apache POI, utilizado para administrar
+	 *                      el contenido de la hoja del archivo de Excel
+	 * @param headerSet     Conjunto de cadena de caracteres, con los campos como
+	 *                      llaves del mapa, para recuperar el contenido de los
+	 *                      mapas que representan los registros a escribir en la
+	 *                      hoja de cálculo
+	 * @param makingContent Bandera que indica si se van a crear los registros del
+	 *                      archivo de Excel (nuevas celdas), en caso de un archivo
+	 *                      nuevo, o si se va a modificar en caso de agregar
+	 *                      contenido a un archivo de Excel utilizado como plantilla
+	 * @param row           Mapa con la llave-valor, que representa el campo, y el
+	 *                      contenido a escribir en el archivo de Excel
+	 * @param initPostRow   Posición inicial del registro en el que el método
+	 *                      empezará a escribir la información enviada, dentro de la
+	 *                      hoja de cáculo
+	 * @param countRow      Variable que representa el registro relativo en el cual
+	 *                      se va a escribir el contenido a través del método
 	 */
 	private void writeContentRows(Sheet objExcelSheet, Set<String> headerSet, boolean makingContent,
 			Map<String, Object> row, int initPosColumn, int countRow) {
@@ -210,8 +314,13 @@ public class GenExcelComponent {
 	}
 
 	/**
-	 * @param objExcelCell
-	 * @param cellContent
+	 * Método auxiliar que setea la información en la celda, de acuerdo al tipo de
+	 * dato del valor a escribir
+	 * 
+	 * @param objExcelCell Objeto instancia de la clase de Apache POI en el que se
+	 *                     administra el contenido de la celda
+	 * @param cellContent  Objeto instancia de la clase, del valor a escribir en la
+	 *                     celda
 	 */
 	private void setCellValue(Cell objExcelCell, Object cellContent) {
 		if (cellContent instanceof Double) {

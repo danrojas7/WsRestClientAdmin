@@ -9,10 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import com.alianza.clientadmin.configuration.ConfigProperties;
 
 /**
+ * Clase principal utilizada por SpringBoot para inicializar el microservicio
+ * 
  * @author Daniel Alejandro
  *
  */
-
 @Configuration
 @EnableConfigurationProperties(ConfigProperties.class)
 @EnableCaching
@@ -20,7 +21,10 @@ import com.alianza.clientadmin.configuration.ConfigProperties;
 public class WsRestClientAdminApplication {
 
 	/**
-	 * @param args
+	 * Método principal que ejecuta el microservicio dentro del contexto de
+	 * SpringBoot
+	 * 
+	 * @param args Argumentos enviados al microservicio en la consola
 	 */
 	public static void main(String[] args) {
 		SpringApplication.run(WsRestClientAdminApplication.class, args);

@@ -15,6 +15,11 @@ import org.springframework.stereotype.Component;
 import com.alianza.clientadmin.entity.ClientEntity;
 
 /**
+ * Clase utilizada para almacenar en la caché de SpringBoot la información de
+ * los clientes ingresados, siempre cuando la aplicación se encuentre
+ * configurada para almacenar en caché, para temas de demostración del
+ * microservicio
+ * 
  * @author Daniel Alejandro
  *
  */
@@ -28,12 +33,14 @@ public class CacheManagement {
 	private CacheManager cacheManager;
 
 	/**
-	 * 
+	 * Lista de clientes a cachear
 	 */
 	private List<ClientEntity> lstClientEntity;
 
 	/**
-	 * @return
+	 * Método que retorna de la caché, la lista de clientes almacenada
+	 * 
+	 * @return Lista de clientes
 	 */
 	@Cacheable("lstClientEntity")
 	public List<ClientEntity> getLstClientEntity() {
@@ -41,7 +48,7 @@ public class CacheManagement {
 	}
 
 	/**
-	 * 
+	 * Método que limpia de la caché, la lista de los clientes ya almacenados
 	 */
 	@CacheEvict(value = "lstClientEntity", allEntries = true)
 	private void clearLstClientEntity() {
@@ -52,7 +59,9 @@ public class CacheManagement {
 	}
 
 	/**
-	 * 
+	 * Método que inicializa la lista de los clientes, para ello crea una nueva
+	 * instancia de la lista de clientes, e invoca el método que limpia de la caché
+	 * la lista existente
 	 */
 	@EventListener(ApplicationReadyEvent.class)
 	public void init() {
