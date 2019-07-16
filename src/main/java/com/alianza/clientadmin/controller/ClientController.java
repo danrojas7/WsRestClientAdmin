@@ -4,6 +4,7 @@ import static com.alianza.clientadmin.constants.Constants.GENERIC_SUCCESS_RESPON
 import static com.alianza.clientadmin.constants.Constants.GENERIC_UNSUCCESS_REPONSE;
 
 import java.io.ByteArrayInputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import javax.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.alianza.clientadmin.component.GenExcelComponent;
 import com.alianza.clientadmin.dto.ClientDTO;
 import com.alianza.clientadmin.model.ResponseService;
 import com.alianza.clientadmin.service.ClientService;
@@ -44,17 +46,26 @@ public class ClientController {
 	private final ClientService clientService;
 
 	/**
+	 * Objeto instancia de la clase componente, utilizada para generar el archivo de
+	 * hoja de cálculo de Microsoft Office Excel
+	 */
+	private final GenExcelComponent genExcelComponent;
+
+	/**
 	 * Constructor de la clase en el que se inicializan los objetos o componentes
 	 * que acoplará SpringBoot al momento de inicializar la clase
 	 * 
-	 * @param clientService Objeto instancia de la clase servicio, en el que se
-	 *                      invoca los métodos de negocio del microservicio
-	 * 
+	 * @param clientService     Objeto instancia de la clase servicio, en el que se
+	 *                          invoca los métodos de negocio del microservicio
+	 * @param genExcelComponent Objeto instancia de la clase componente, utilizada
+	 *                          para generar el archivo de hoja de cálculo de
+	 *                          Microsoft Office Excel
 	 */
 	@Autowired
-	public ClientController(ClientService clientService) {
+	public ClientController(ClientService clientService, GenExcelComponent genExcelComponent) {
 		super();
 		this.clientService = clientService;
+		this.genExcelComponent = genExcelComponent;
 	}
 
 	/**
@@ -207,6 +218,45 @@ public class ClientController {
 				throw new IllegalArgumentException("Unsupported format file");
 			}
 			baFile = clientService.getExportFileClientList(fileFormat);
+			contentLength = baFile.length;
+			return ResponseEntity.ok().contentLength(contentLength).contentType(MediaType.parseMediaType(mediaType))
+					.header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment;filename=export.%s", fileFormat))
+					.body(new InputStreamResource(new ByteArrayInputStream(baFile)));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+		}
+	}
+
+	/**
+	 * Método que genera un archivo de excel a partir de un archivo JSON
+	 * 
+	 * @param fileFormat      Fomato del archivo de excel a generar
+	 * @param lstFileContents Lista de mapas con la información del JSON a generar
+	 *                        el archivo
+	 * @return ResponseEntity con la data del archivo generado dentro de un
+	 *         InputStream, para que se active la descarga mediante un modal de
+	 *         descarga al cliente
+	 */
+	@CrossOrigin
+	@PostMapping("/getFileFromJson/{fileFormat}")
+	public ResponseEntity<InputStreamResource> getFileFromJson(@Valid @PathVariable("fileFormat") String fileFormat,
+			@Valid @RequestBody List<LinkedHashMap<String, Object>> lstFileContents) {
+		byte[] baFile = null;
+		long contentLength = 0;
+		String mediaType = null;
+
+		try {
+			if (fileFormat.equalsIgnoreCase("xls")) {
+				mediaType = "application/vnd.ms-excel";
+			} else if (fileFormat.equalsIgnoreCase("xlsx")) {
+				mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+			} else {
+				throw new IllegalArgumentException("Unsupported format file");
+			}
+
+			baFile = genExcelComponent.generarByteArrayArchivoExcel(null, 0, 0, lstFileContents, null, true,
+					String.format(".%s", fileFormat), "content", null, false, true);
+
 			contentLength = baFile.length;
 			return ResponseEntity.ok().contentLength(contentLength).contentType(MediaType.parseMediaType(mediaType))
 					.header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment;filename=export.%s", fileFormat))
