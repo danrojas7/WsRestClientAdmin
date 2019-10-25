@@ -4,8 +4,10 @@ import static com.alianza.clientadmin.constants.Constants.GENERIC_SUCCESS_RESPON
 import static com.alianza.clientadmin.constants.Constants.GENERIC_UNSUCCESS_REPONSE;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.validation.Valid;
 
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,6 +30,8 @@ import com.alianza.clientadmin.component.GenExcelComponent;
 import com.alianza.clientadmin.dto.ClientDTO;
 import com.alianza.clientadmin.model.ResponseService;
 import com.alianza.clientadmin.service.ClientService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Clase controladora en la que se exponen todas las operaciones del API rest
@@ -253,6 +258,52 @@ public class ClientController {
 			} else {
 				throw new IllegalArgumentException("Unsupported format file");
 			}
+
+			baFile = genExcelComponent.generarByteArrayArchivoExcel(null, 0, 0, lstFileContents, null, true,
+					String.format(".%s", fileFormat), "content", null, false, true);
+
+			contentLength = baFile.length;
+			return ResponseEntity.ok().contentLength(contentLength).contentType(MediaType.parseMediaType(mediaType))
+					.header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment;filename=export.%s", fileFormat))
+					.body(new InputStreamResource(new ByteArrayInputStream(baFile)));
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+		}
+	}
+
+	/**
+	 * Método que genera un archivo de excel a partir de un archivo JSON
+	 * 
+	 * @param fileFormat      Fomato del archivo de excel a generar
+	 * @param lstFileContents Lista de mapas con la información del JSON a generar
+	 *                        el archivo
+	 * @return ResponseEntity con la data del archivo generado dentro de un
+	 *         InputStream, para que se active la descarga mediante un modal de
+	 *         descarga al cliente
+	 */
+	@CrossOrigin
+	@PostMapping("/getFileFromJsonFromFile/{fileFormat}")
+	public ResponseEntity<InputStreamResource> getFileFromJsonFromFile(
+			@Valid @PathVariable("fileFormat") String fileFormat, @Valid @RequestHeader("filePath") String filePath) {
+		byte[] baFile = null;
+		long contentLength = 0;
+		String mediaType = null;
+		List<LinkedHashMap<String, Object>> lstFileContents = null;
+		ObjectMapper objectMapper = null;
+
+		try {
+			if (fileFormat.equalsIgnoreCase("xls")) {
+				mediaType = "application/vnd.ms-excel";
+			} else if (fileFormat.equalsIgnoreCase("xlsx")) {
+				mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+			} else {
+				throw new IllegalArgumentException("Unsupported format file");
+			}
+
+			String content = new Scanner(new File(filePath)).useDelimiter("\\Z").next();
+			objectMapper = new ObjectMapper();
+			lstFileContents = objectMapper.readValue(content, new TypeReference<List<LinkedHashMap<String, Object>>>() {
+			});
 
 			baFile = genExcelComponent.generarByteArrayArchivoExcel(null, 0, 0, lstFileContents, null, true,
 					String.format(".%s", fileFormat), "content", null, false, true);
